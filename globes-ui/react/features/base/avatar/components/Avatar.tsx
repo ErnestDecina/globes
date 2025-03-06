@@ -8,7 +8,7 @@ import { IParticipant } from '../../participants/types';
 import { getAvatarColor, getInitials, isCORSAvatarURL } from '../functions';
 import { IAvatarProps as AbstractProps } from '../types';
 
-import { StatelessAvatar } from './';
+import { StatelessAvatar } from '.';
 
 export interface IProps {
 

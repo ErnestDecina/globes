@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { Theme, adaptV4Theme, createTheme } from '@mui/material/styles';
 
-import { ITypography, IPalette as Palette1 } from '../ui/types';
+import { ITypography, IPalette as Palette1 } from './types';
 
 import { createColorTokens } from './utils';
 

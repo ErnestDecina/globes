@@ -3,7 +3,7 @@
 import { URL } from 'url';
 
 // @ts-ignore
-import { config as defaultConfig } from './wdio.conf.ts';
+import { config as defaultConfig } from './wdio.conf.js';
 
 const gridUrl = new URL(process.env.GRID_HOST_URL as string);
 const protocol = gridUrl.protocol.replace(':', '');

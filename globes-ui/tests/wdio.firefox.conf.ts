@@ -4,7 +4,7 @@ import { merge } from 'lodash-es';
 import process from 'node:process';
 
 // @ts-ignore
-import { config as defaultConfig } from './wdio.conf.ts';
+import { config as defaultConfig } from './wdio.conf.js';
 
 const ffArgs = [];
 

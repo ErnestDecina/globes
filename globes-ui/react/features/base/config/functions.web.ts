@@ -1,5 +1,5 @@
 import { IReduxState } from '../../app/types';
-import JitsiMeetJS from '../../base/lib-jitsi-meet';
+import JitsiMeetJS from '../lib-jitsi-meet';
 
 import {
     IConfig,

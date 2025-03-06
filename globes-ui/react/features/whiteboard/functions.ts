@@ -1,6 +1,6 @@
 import md5 from 'js-md5';
 
-import { getParticipantCount, getPinnedParticipant } from '../../features/base/participants/functions';
+import { getParticipantCount, getPinnedParticipant } from '../base/participants/functions';
 import { IReduxState } from '../app/types';
 import { getCurrentConference } from '../base/conference/functions';
 import { IWhiteboardConfig } from '../base/config/configType';
