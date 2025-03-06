@@ -1,0 +1,19 @@
+{
+  "name": "globes-api",
+  "version": "1.0.0",
+  "description": "Globes Api",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "npx tsx ./src/index.ts"
+  },
+  "author": "Ernest John Decina",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  }
+}
