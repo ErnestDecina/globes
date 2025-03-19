@@ -1,15 +1,21 @@
 {
-  "name": "Jitsi Meet Dev Container",
-  "image": "mcr.microsoft.com/devcontainers/universal:2",
-  "features": {
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "20"
-    }
-  },
-  "hostRequirements": {
-    "cpus": 4,
-    "memory": "8gb",
-    "storage": "32gb" 
-  },
-  "postCreateCommand": "bash -i -c 'nvm use && npm install && cp tsconfig.web.json tsconfig.json'"
-}
+    "name": "Node 20 + PostgreSQL Dev Container",
+    "build": {
+      "dockerfile": "Dockerfile"
+    },
+    "forwardPorts": [5432],
+    "customizations": {
+      "vscode": {
+        "settings": {
+            "terminal.integrated.shell.linux": "/bin/bash"
+        }
+      }  
+    },
+    "postCreateCommand": "npm install",
+    "remoteUser": "devuser",
+    "features": {},
+    "mounts": [
+      "source=pgdata,target=/var/lib/postgresql/data,type=volume"
+    ]
+  }
+  

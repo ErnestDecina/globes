@@ -2,6 +2,7 @@ import Logger from "./utils/logger";
 import { createExpressServer } from "./server";
 import { application_name, is_development } from "./config/application.config";
 import { express_port, api_version } from "./config/express.config";
+import { DatabasePostgres } from "./database";
 
 const express_server = createExpressServer();
 
