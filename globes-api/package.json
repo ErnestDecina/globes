@@ -10,7 +10,9 @@
   "author": "Ernest John Decina",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "jest": "^29.7.0",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "ts-node": "^10.9.2",
