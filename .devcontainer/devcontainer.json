@@ -1,21 +1,23 @@
 {
     "name": "Node 20 + PostgreSQL Dev Container",
-    "build": {
-      "dockerfile": "Dockerfile"
-    },
-    "forwardPorts": [5432],
+    "dockerComposeFile": [
+      "docker-compose.yml"
+    ],
+    "service": "node",
+    "workspaceFolder": "/workspace",
+    "forwardPorts": [3000, 5432],
+    "remoteUser": "devuser",
     "customizations": {
       "vscode": {
         "settings": {
             "terminal.integrated.shell.linux": "/bin/bash"
-        }
+        },
+        "extensions": [
+                "ms-azuretools.vscode-docker",
+                "dbaeumer.vscode-eslint"
+        ]
       }  
     },
-    "postCreateCommand": "npm install",
-    "remoteUser": "devuser",
-    "features": {},
-    "mounts": [
-      "source=pgdata,target=/var/lib/postgresql/data,type=volume"
-    ]
+    "postCreateCommand": "npm install"
   }
   

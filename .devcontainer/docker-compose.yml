@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  node:
+    image: node:20
+    container_name: node-container
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    command: tail -f /dev/null # Keeps the container running
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres-container
+    environment:
+      POSTGRES_USER: C21394933
+      POSTGRES_PASSWORD: PASSWORD
+      POSTGRES_DB: datavase
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  pgdata:
