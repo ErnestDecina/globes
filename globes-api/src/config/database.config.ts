@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 const database_config = {
-    host: "0.0.0.0",
+    host: "db",
     database: "database",
     username: "c21394933",
     password: "postgres",
