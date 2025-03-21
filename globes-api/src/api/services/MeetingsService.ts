@@ -1,7 +1,10 @@
+import translateTextToLanguageNoContext from "../../utils/openai";
 import { MeetingInput, MeetingOutput } from "../model/Meetings";
 import { MessageInput, MessageOutput } from "../model/Messages";
+import { TranslationInput, TranslationOutput } from "../model/TranslationMessages";
 import MeetingsRepository from "../repositories/MeetingsRepository";
 import MessagesRepository from "../repositories/MessagesRepository";
+import TranslationsRepository from "../repositories/TranslationsRepository";
 
 interface IMeetingsService {
     createMeetings(payload: MeetingInput): Promise<MeetingOutput>;
@@ -30,9 +33,22 @@ class MeetingsService implements IMeetingsService {
         }
     }
 
-    postMessage(payload: MessageInput): Promise<MessageOutput> {
+    async postMessage(payload: MessageInput): Promise<MessageOutput> {
         try {
-            return MessagesRepository.addMessage(payload);
+            const message = await MessagesRepository.addMessage(payload);
+
+            
+            // Translate to Korean
+            const translation: TranslationInput = {
+                messageId: message.messageId,
+                meetingId: message.meetingId,
+                translation_message: await translateTextToLanguageNoContext('ko', message.originalMessage),
+                translated_language: 'ko'
+            }
+            TranslationsRepository.addTranslation(translation);
+
+            
+            return message;
         } catch(error) {
             console.error('Error adding message:', error);
             throw new Error('Failed to add message');
@@ -46,6 +62,19 @@ class MeetingsService implements IMeetingsService {
         } catch(error) {
             console.error('Error getting meeting:', error);
             throw new Error('Failed to get meeting');
+        }
+    }
+
+    getTranslations(
+        meeting_id: string,
+        language: string,
+    ): Promise<TranslationOutput[]> {
+        try {
+            // Add Unhashing
+            return TranslationsRepository.getTranslations(meeting_id, language);
+        } catch(error) {
+            console.error('Error getting translations:', error);
+            throw new Error('Failed to get translations');
         }
     }
 } 

@@ -1,3 +1,4 @@
+import { DatabasePostgres } from "../../database";
 import Messages, { MessageInput, MessageOutput } from "../model/Messages";
 
 
@@ -10,7 +11,7 @@ class MessagesRepository implements IMessagesRepository {
     async addMessage(payload: MessageInput): Promise<MessageOutput> {
         try {
             const meetingDetails: MessageOutput = (await Messages.create(payload)).toJSON();
-            return meetingDetails;
+            return meetingDetails; 
         } catch(error) {
             console.error('Error adding message:', error);
             throw new Error('Failed to add message');

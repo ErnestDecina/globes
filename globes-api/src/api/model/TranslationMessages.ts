@@ -13,7 +13,7 @@ interface TranslationAttributes {
     translated_language: string;
 }
 
-export type TranslationInput = Optional<MessageAttributes, 'messageId'>;
+export type TranslationInput = Optional<TranslationAttributes, 'translatedMessageId'>;
 export type TranslationOutput = Required<TranslationAttributes>;
 
 
