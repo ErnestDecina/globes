@@ -6,7 +6,6 @@ import { DatabasePostgres } from "./database";
 import sync from "./database/sync";
 
 DatabasePostgres;
-sync();
 const express_server = createExpressServer();
 
 express_server.listen(express_port, () => {

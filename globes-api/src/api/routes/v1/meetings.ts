@@ -5,6 +5,7 @@ const meetings_router: Router = Router();
 
 meetings_router
     .route('/')
-    .get(MeetingsController.getMeetings);
+    .get(MeetingsController.getMeetings)
+    .post(MeetingsController.postMeetings);
 
 export default meetings_router;
