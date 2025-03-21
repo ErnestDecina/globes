@@ -10,7 +10,7 @@ class MeetingsController {
         next: NextFunction
     ): Promise<void> {
         try {
-            const meetingUUID: string = req.body.uuid;
+            const meetingUUID: string = req.params.uuid;
             res.status(200).send(await MeetingsService.getMeetings(meetingUUID));
         } catch (error) {
             res.status(400).send();
