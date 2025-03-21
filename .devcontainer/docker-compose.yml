@@ -9,7 +9,7 @@ services:
       - ..:/workspace:cached
     command: sleep infinity
     depends_on:
-      - db  # Ensures the database starts before the app
+      - db
     networks:
       - dev-network
 
