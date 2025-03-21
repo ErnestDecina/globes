@@ -37,15 +37,32 @@ class MeetingsService implements IMeetingsService {
         try {
             const message = await MessagesRepository.addMessage(payload);
 
+            // Translate to English
+            const englishTranslation: TranslationInput = {
+                messageId: message.messageId,
+                meetingId: message.meetingId,
+                translation_message: await translateTextToLanguageNoContext('en', message.originalMessage),
+                translated_language: 'en'
+            }
+            TranslationsRepository.addTranslation(englishTranslation);
             
             // Translate to Korean
-            const translation: TranslationInput = {
+            const koreanTranslation: TranslationInput = {
                 messageId: message.messageId,
                 meetingId: message.meetingId,
                 translation_message: await translateTextToLanguageNoContext('ko', message.originalMessage),
                 translated_language: 'ko'
             }
-            TranslationsRepository.addTranslation(translation);
+            TranslationsRepository.addTranslation(koreanTranslation);
+
+            // Translate to German
+            const germanTranslation: TranslationInput = {
+                messageId: message.messageId,
+                meetingId: message.meetingId,
+                translation_message: await translateTextToLanguageNoContext('de', message.originalMessage),
+                translated_language: 'de'
+            }
+            TranslationsRepository.addTranslation(germanTranslation);
 
             
             return message;
@@ -72,6 +89,19 @@ class MeetingsService implements IMeetingsService {
         try {
             // Add Unhashing
             return TranslationsRepository.getTranslations(meeting_id, language);
+        } catch(error) {
+            console.error('Error getting translations:', error);
+            throw new Error('Failed to get translations');
+        }
+    }
+
+    getTranslation(
+        message_id: string,
+        language: string,
+    ): Promise<TranslationOutput> {
+        try {
+            // Add Unhashing
+            return TranslationsRepository.getTranslation(message_id, language);
         } catch(error) {
             console.error('Error getting translations:', error);
             throw new Error('Failed to get translations');

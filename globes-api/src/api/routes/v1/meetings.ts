@@ -15,8 +15,9 @@ meetings_router
     .post(MeetingsController.postMessage)
     .get(MeetingsController.getMessages);
 
-// meetings_router
-//     .route('/:meeting_uuid/translations/:message_uuid', MeetingsController.getTranslations);
+meetings_router
+    .route('/:meeting_uuid/translations/:message_uuid')
+    .get(MeetingsController.getTranslation);
 
 meetings_router
     .route('/:meeting_uuid/translations')

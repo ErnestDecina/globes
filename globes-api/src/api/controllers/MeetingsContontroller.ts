@@ -77,6 +77,26 @@ class MeetingsController {
             res.status(400).send();
         } 
     } 
+
+    async getTranslation(
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ): Promise<void> {
+        try {
+            const messageUUID: string = req.params.message_uuid;
+            let langauge: string = req.query.lang;
+
+            if(!langauge) {
+                langauge = 'en';
+            }
+            
+
+            res.status(200).send(await MeetingsService.getTranslation(messageUUID, langauge));
+        } catch (error) {
+            res.status(400).send();
+        } 
+    } 
 } 
 
 export default new MeetingsController();
