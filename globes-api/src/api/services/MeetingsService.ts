@@ -1,5 +1,7 @@
 import { MeetingInput, MeetingOutput } from "../model/Meetings";
+import { MessageInput, MessageOutput } from "../model/Messages";
 import MeetingsRepository from "../repositories/MeetingsRepository";
+import MessagesRepository from "../repositories/MessagesRepository";
 
 interface IMeetingsService {
     createMeetings(payload: MeetingInput): Promise<MeetingOutput>;
@@ -17,6 +19,7 @@ class MeetingsService implements IMeetingsService {
         }
         
     }
+
     getMeetings(uuid: string): Promise<MeetingOutput> {
         try {
             // Add Unhashing
@@ -27,6 +30,24 @@ class MeetingsService implements IMeetingsService {
         }
     }
 
+    postMessage(payload: MessageInput): Promise<MessageOutput> {
+        try {
+            return MessagesRepository.addMessage(payload);
+        } catch(error) {
+            console.error('Error adding message:', error);
+            throw new Error('Failed to add message');
+        }
+    } 
+
+    getMessages(meeting_id: string): Promise<MessageOutput[]> {
+        try {
+            // Add Unhashing
+            return MessagesRepository.getMessages(meeting_id);
+        } catch(error) {
+            console.error('Error getting meeting:', error);
+            throw new Error('Failed to get meeting');
+        }
+    }
 } 
 
 export default new MeetingsService();
