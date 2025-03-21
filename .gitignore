@@ -120,3 +120,4 @@ tests/.env
 test-results
 
 *.log
+globes-api/.env
