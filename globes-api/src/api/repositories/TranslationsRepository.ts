@@ -4,6 +4,7 @@ import TranslatedMessages, { TranslationInput, TranslationOutput } from "../mode
 interface ITranslatedMessagesRepository {
     addTranslation(payload: TranslationInput): Promise<TranslationOutput>;
     getTranslations(meeting_id: string, language: string): Promise<TranslationOutput[]>;
+    getTranslation(message_id: string, language: string): Promise<TranslationOutput>;
 }; // End interface IRoleRepository
 
 class MessagesRepository implements ITranslatedMessagesRepository {
