@@ -50,7 +50,8 @@ local.properties
 
 # node.js
 #
-node_modules/
+globes-ui/node_modules
+globes-api/node_modules
 npm-debug.log
 yarn-error.log
 
@@ -118,3 +119,5 @@ react-native-sdk/sounds
 tests/.env
 test-results
 
+*.log
+globes-api/.env

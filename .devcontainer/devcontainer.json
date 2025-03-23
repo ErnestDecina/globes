@@ -1,15 +1,22 @@
 {
-  "name": "Jitsi Meet Dev Container",
-  "image": "mcr.microsoft.com/devcontainers/universal:2",
-  "features": {
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "20"
+  "name": "NodeJS & PostgreSQL Dev Container",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash"
+      },
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "ms-vscode.vscode-typescript-next"
+      ]
     }
   },
-  "hostRequirements": {
-    "cpus": 4,
-    "memory": "8gb",
-    "storage": "32gb" 
-  },
-  "postCreateCommand": "bash -i -c 'nvm use && npm install && cp tsconfig.web.json tsconfig.json'"
+  "forwardPorts": [5432],
+  "postCreateCommand": ""
 }
