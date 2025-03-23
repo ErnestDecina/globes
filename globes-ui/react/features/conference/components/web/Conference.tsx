@@ -42,6 +42,9 @@ import type { AbstractProps } from '../AbstractConference';
 
 import ConferenceInfo from './ConferenceInfo';
 import { default as Notice } from './Notice';
+import DefaultConference from './en/DefaultConference';
+import languageDetector from '../../../base/i18n/languageDetector.web';
+import KoreanConference from './ko/KoreanConference';
 
 /**
  * DOM events for when full screen mode has changed. Different browsers need
@@ -109,6 +112,15 @@ interface IProps extends AbstractProps, WithTranslation {
      */
     _showVisitorsQueue: boolean;
 
+    // Display Layout
+    _displayLayout: any;
+
+    // Default UI
+    _defaultUI: any;
+
+    // Korea UI
+    _koreanUI: any;
+
     dispatch: IStore['dispatch'];
 }
 
@@ -137,34 +149,6 @@ class Conference extends AbstractConference<IProps, any> {
      */
     constructor(props: IProps) {
         super(props);
-
-        const { _mouseMoveCallbackInterval } = props;
-
-        // Throttle and bind this component's mousemove handler to prevent it
-        // from firing too often.
-        this._originalOnShowToolbar = this._onShowToolbar;
-        this._originalOnMouseMove = this._onMouseMove;
-
-        this._onShowToolbar = throttle(
-            () => this._originalOnShowToolbar(),
-            100,
-            {
-                leading: true,
-                trailing: false
-            });
-
-        this._onMouseMove = throttle(
-            event => this._originalOnMouseMove(event),
-            _mouseMoveCallbackInterval,
-            {
-                leading: true,
-                trailing: false
-            });
-
-        // Bind event handler so it is only bound once for every instance.
-        this._onFullScreenChange = this._onFullScreenChange.bind(this);
-        this._onVideospaceTouchStart = this._onVideospaceTouchStart.bind(this);
-        this._setBackground = this._setBackground.bind(this);
     }
 
     /**
@@ -174,7 +158,6 @@ class Conference extends AbstractConference<IProps, any> {
      */
     componentDidMount() {
         document.title = `${this.props._roomName} | ${interfaceConfig.APP_NAME}`;
-        this._start();
     }
 
     /**
@@ -204,10 +187,6 @@ class Conference extends AbstractConference<IProps, any> {
      */
     componentWillUnmount() {
         APP.UI.unbindEvents();
-
-        FULL_SCREEN_EVENTS.forEach(name =>
-            document.removeEventListener(name, this._onFullScreenChange));
-
         APP.conference.isJoined() && this.props.dispatch(hangup());
     }
 
@@ -218,189 +197,14 @@ class Conference extends AbstractConference<IProps, any> {
      * @returns {ReactElement}
      */
     render() {
-        const {
-            _isAnyOverlayVisible,
-            _layoutClassName,
-            _notificationsVisible,
-            _overflowDrawer,
-            _showLobby,
-            _showPrejoin,
-            _showVisitorsQueue,
-            t
-        } = this.props;
+        const language = languageDetector.detect();
+        let layout = <DefaultConference/>;
 
-        return (
-            <div
-                id = 'layout_wrapper'
-                onMouseEnter = { this._onMouseEnter }
-                onMouseLeave = { this._onMouseLeave }
-                onMouseMove = { this._onMouseMove }
-                ref = { this._setBackground }>
-                <Chat />
-                <div
-                    className = { _layoutClassName }
-                    id = 'videoconference_page'
-                    onMouseMove = { isMobileBrowser() ? undefined : this._onShowToolbar }>
-                    { _showPrejoin || _showLobby || <ConferenceInfo /> }
-                    <Notice />
-                    <div
-                        id = 'videospace'
-                        onTouchStart = { this._onVideospaceTouchStart }>
-                        <LargeVideo />
-                        {
-                            _showPrejoin || _showLobby || (<>
-                                <StageFilmstrip />
-                                <ScreenshareFilmstrip />
-                                <MainFilmstrip />
-                            </>)
-                        }
-                    </div>
-
-                    { _showPrejoin || _showLobby || (
-                        <>
-                            <span
-                                aria-level = { 1 }
-                                className = 'sr-only'
-                                role = 'heading'>
-                                { t('toolbar.accessibilityLabel.heading') }
-                            </span>
-                            <Toolbox />
-                        </>
-                    )}
-
-                    {_notificationsVisible && !_isAnyOverlayVisible && (_overflowDrawer
-                        ? <JitsiPortal className = 'notification-portal'>
-                            {this.renderNotificationsContainer({ portal: true })}
-                        </JitsiPortal>
-                        : this.renderNotificationsContainer())
-                    }
-
-                    <CalleeInfoContainer />
-
-                    { shouldShowPrejoin(this.props) && <Prejoin />}
-                    { (_showLobby && !_showVisitorsQueue) && <LobbyScreen />}
-                    { _showVisitorsQueue && <VisitorsQueue />}
-                </div>
-                <ParticipantsPane />
-                <ReactionAnimations />
-            </div>
-        );
-    }
-
-    /**
-     * Sets custom background opacity based on config. It also applies the
-     * opacity on parent element, as the parent element is not accessible directly,
-     * only though it's child.
-     *
-     * @param {Object} element - The DOM element for which to apply opacity.
-     *
-     * @private
-     * @returns {void}
-     */
-    _setBackground(element: HTMLDivElement) {
-        if (!element) {
-            return;
+        if(language === "ko") {
+            layout = <KoreanConference/>;
         }
 
-        if (this.props._backgroundAlpha !== undefined) {
-            const elemColor = element.style.background;
-            const alphaElemColor = setColorAlpha(elemColor, this.props._backgroundAlpha);
-
-            element.style.background = alphaElemColor;
-            if (element.parentElement) {
-                const parentColor = element.parentElement.style.background;
-                const alphaParentColor = setColorAlpha(parentColor, this.props._backgroundAlpha);
-
-                element.parentElement.style.background = alphaParentColor;
-            }
-        }
-    }
-
-    /**
-     * Handler used for touch start on Video container.
-     *
-     * @private
-     * @returns {void}
-     */
-    _onVideospaceTouchStart() {
-        this.props.dispatch(toggleToolboxVisible());
-    }
-
-    /**
-     * Updates the Redux state when full screen mode has been enabled or
-     * disabled.
-     *
-     * @private
-     * @returns {void}
-     */
-    _onFullScreenChange() {
-        this.props.dispatch(fullScreenChanged(APP.UI.isFullScreen()));
-    }
-
-    /**
-     * Triggers iframe API mouseEnter event.
-     *
-     * @param {MouseEvent} event - The mouse event.
-     * @private
-     * @returns {void}
-     */
-    _onMouseEnter(event: React.MouseEvent) {
-        APP.API.notifyMouseEnter(event);
-    }
-
-    /**
-     * Triggers iframe API mouseLeave event.
-     *
-     * @param {MouseEvent} event - The mouse event.
-     * @private
-     * @returns {void}
-     */
-    _onMouseLeave(event: React.MouseEvent) {
-        APP.API.notifyMouseLeave(event);
-    }
-
-    /**
-     * Triggers iframe API mouseMove event.
-     *
-     * @param {MouseEvent} event - The mouse event.
-     * @private
-     * @returns {void}
-     */
-    _onMouseMove(event: React.MouseEvent) {
-        APP.API.notifyMouseMove(event);
-    }
-
-    /**
-     * Displays the toolbar.
-     *
-     * @private
-     * @returns {void}
-     */
-    _onShowToolbar() {
-        this.props.dispatch(showToolbox());
-    }
-
-    /**
-     * Until we don't rewrite UI using react components
-     * we use UI.start from old app. Also method translates
-     * component right after it has been mounted.
-     *
-     * @inheritdoc
-     */
-    _start() {
-        APP.UI.start();
-        APP.UI.bindEvents();
-
-        FULL_SCREEN_EVENTS.forEach(name =>
-            document.addEventListener(name, this._onFullScreenChange));
-
-        const { dispatch, t } = this.props;
-
-        // if we will be showing prejoin we don't want to call connect from init.
-        // Connect will be dispatched from prejoin screen.
-        dispatch(init(!shouldShowPrejoin(this.props)));
-
-        maybeShowSuboptimalExperienceNotification(dispatch, t);
+        return layout;
     }
 }
 

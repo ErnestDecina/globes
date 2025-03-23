@@ -24,7 +24,7 @@ order.push(configLanguageDetector.name);
 /**
  * The singleton language detector for Web.
  */
-const languageDetector
+export const languageDetector
     = new BrowserLanguageDetector(
         /* services */ null,
         /* options */ {
