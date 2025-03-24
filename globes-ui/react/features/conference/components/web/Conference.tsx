@@ -190,6 +190,15 @@ class Conference extends AbstractConference<IProps, any> {
         APP.conference.isJoined() && this.props.dispatch(hangup());
     }
 
+        /**
+     * Start the connection and get the UI ready for the conference.
+     *
+     * @inheritdoc
+     */
+    componentDidMount() {
+        this._start();
+    }
+
     /**
      * Implements React's {@link Component#render()}.
      *
@@ -205,6 +214,18 @@ class Conference extends AbstractConference<IProps, any> {
         }
 
         return layout;
+    }
+
+    /**
+     * Until we don't rewrite UI using react components
+     * we use UI.start from old app. Also method translates
+     * component right after it has been mounted.
+     *
+     * @inheritdoc
+     */
+    _start() {
+        APP.UI.start();
+        APP.UI.bindEvents();
     }
 }
 

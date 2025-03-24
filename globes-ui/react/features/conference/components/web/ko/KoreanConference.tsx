@@ -1,59 +1,52 @@
-import { throttle } from 'lodash-es';
-import React from 'react';
-import { WithTranslation } from 'react-i18next';
-import { connect as reactReduxConnect } from 'react-redux';
+import { throttle } from "lodash-es";
+import React from "react";
+import { WithTranslation } from "react-i18next";
+import { connect as reactReduxConnect } from "react-redux";
 
 // @ts-expect-error
-import VideoLayout from '../../../../../../modules/UI/videolayout/VideoLayout';
-import { IReduxState, IStore } from '../../../../app/types';
-import { getConferenceNameForTitle } from '../../../../base/conference/functions';
-import { hangup } from '../../../../base/connection/actions.web';
-import { isMobileBrowser } from '../../../../base/environment/utils';
-import { translate } from '../../../../base/i18n/functions';
-import { setColorAlpha } from '../../../../base/util/helpers';
-import Chat from '../../../../chat/components/web/Chat';
-import MainFilmstrip from '../../../../filmstrip/components/web/MainFilmstrip';
-import ScreenshareFilmstrip from '../../../../filmstrip/components/web/ScreenshareFilmstrip';
-import StageFilmstrip from '../../../../filmstrip/components/web/StageFilmstrip';
-import CalleeInfoContainer from '../../../../invite/components/callee-info/CalleeInfoContainer';
-import LargeVideo from '../../../../large-video/components/LargeVideo.web';
-import LobbyScreen from '../../../../lobby/components/web/LobbyScreen';
-import { getIsLobbyVisible } from '../../../../lobby/functions';
-import { getOverlayToRender } from '../../../../overlay/functions.web';
-import ParticipantsPane from '../../../../participants-pane/components/web/ParticipantsPane';
-import Prejoin from '../../../../prejoin/components/web/Prejoin';
-import { isPrejoinPageVisible } from '../../../../prejoin/functions';
-import ReactionAnimations from '../../../../reactions/components/web/ReactionsAnimations';
-import { toggleToolboxVisible } from '../../../../toolbox/actions.any';
-import { fullScreenChanged, showToolbox } from '../../../../toolbox/actions.web';
-import JitsiPortal from '../../../../toolbox/components/web/JitsiPortal';
-import Toolbox from '../../../../toolbox/components/web/Toolbox';
-import { LAYOUT_CLASSNAMES } from '../../../../video-layout/constants';
-import { getCurrentLayout } from '../../../../video-layout/functions.any';
-import VisitorsQueue from '../../../../visitors/components/web/VisitorsQueue';
-import { showVisitorsQueue } from '../../../../visitors/functions';
-import { init } from '../../../actions.web';
-import { maybeShowSuboptimalExperienceNotification } from '../../../functions.web';
-import {
-    AbstractConference,
-    abstractMapStateToProps
-} from '../../AbstractConference';
-import type { AbstractProps } from '../../AbstractConference';
+import VideoLayout from "../../../../../../modules/UI/videolayout/VideoLayout";
+import { IReduxState, IStore } from "../../../../app/types";
+import { getConferenceNameForTitle } from "../../../../base/conference/functions";
+import { hangup } from "../../../../base/connection/actions.web";
+import { isMobileBrowser } from "../../../../base/environment/utils";
+import { translate } from "../../../../base/i18n/functions";
+import { setColorAlpha } from "../../../../base/util/helpers";
+import Chat from "../../../../chat/components/web/Chat";
+import MainFilmstrip from "../../../../filmstrip/components/web/MainFilmstrip";
+import ScreenshareFilmstrip from "../../../../filmstrip/components/web/ScreenshareFilmstrip";
+import StageFilmstrip from "../../../../filmstrip/components/web/StageFilmstrip";
+import CalleeInfoContainer from "../../../../invite/components/callee-info/CalleeInfoContainer";
+import KoreanLargeVideo from "./KoreanLargeVideo.web";
+import LobbyScreen from "../../../../lobby/components/web/LobbyScreen";
+import { getIsLobbyVisible } from "../../../../lobby/functions";
+import { getOverlayToRender } from "../../../../overlay/functions.web";
+import ParticipantsPane from "../../../../participants-pane/components/web/ParticipantsPane";
+import Prejoin from "../../../../prejoin/components/web/Prejoin";
+import { isPrejoinPageVisible } from "../../../../prejoin/functions";
+import ReactionAnimations from "../../../../reactions/components/web/ReactionsAnimations";
+import { toggleToolboxVisible } from "../../../../toolbox/actions.any";
+import { fullScreenChanged, showToolbox } from "../../../../toolbox/actions.web";
+import JitsiPortal from "../../../../toolbox/components/web/JitsiPortal";
+import Toolbox from "../../../../toolbox/components/web/Toolbox";
+import { LAYOUT_CLASSNAMES } from "../../../../video-layout/constants";
+import { getCurrentLayout } from "../../../../video-layout/functions.any";
+import VisitorsQueue from "../../../../visitors/components/web/VisitorsQueue";
+import { showVisitorsQueue } from "../../../../visitors/functions";
+import { init } from "../../../actions.web";
+import { maybeShowSuboptimalExperienceNotification } from "../../../functions.web";
+import { AbstractConference, abstractMapStateToProps } from "../../AbstractConference";
+import type { AbstractProps } from "../../AbstractConference";
 
-import ConferenceInfo from '../ConferenceInfo';
-import { default as Notice } from '../Notice';
+import ConferenceInfo from "../ConferenceInfo";
+import { default as Notice } from "../Notice";
+import ScreenSharePlaceholderWeb from "../../../../large-video/components/ScreenSharePlaceholder.web";
 
-const FULL_SCREEN_EVENTS = [
-    'webkitfullscreenchange',
-    'mozfullscreenchange',
-    'fullscreenchange'
-];
+const FULL_SCREEN_EVENTS = ["webkitfullscreenchange", "mozfullscreenchange", "fullscreenchange"];
 
 /**
  * The type of the React {@code Component} props of {@link Conference}.
  */
 interface IProps extends AbstractProps, WithTranslation {
-
     /**
      * The alpha(opacity) of the background.
      */
@@ -102,7 +95,7 @@ interface IProps extends AbstractProps, WithTranslation {
      */
     _showVisitorsQueue: boolean;
 
-    dispatch: IStore['dispatch'];
+    dispatch: IStore["dispatch"];
 }
 
 /**
@@ -132,21 +125,15 @@ class DefaultConference extends AbstractConference<IProps, any> {
         this._originalOnShowToolbar = this._onShowToolbar;
         this._originalOnMouseMove = this._onMouseMove;
 
-        this._onShowToolbar = throttle(
-            () => this._originalOnShowToolbar(),
-            100,
-            {
-                leading: true,
-                trailing: false
-            });
+        this._onShowToolbar = throttle(() => this._originalOnShowToolbar(), 100, {
+            leading: true,
+            trailing: false,
+        });
 
-        this._onMouseMove = throttle(
-            event => this._originalOnMouseMove(event),
-            _mouseMoveCallbackInterval,
-            {
-                leading: true,
-                trailing: false
-            });
+        this._onMouseMove = throttle((event) => this._originalOnMouseMove(event), _mouseMoveCallbackInterval, {
+            leading: true,
+            trailing: false,
+        });
 
         // Bind event handler so it is only bound once for every instance.
         this._onFullScreenChange = this._onFullScreenChange.bind(this);
@@ -161,8 +148,7 @@ class DefaultConference extends AbstractConference<IProps, any> {
      * @inheritdoc
      */
     componentWillUnmount() {
-        FULL_SCREEN_EVENTS.forEach(name =>
-            document.removeEventListener(name, this._onFullScreenChange));
+        FULL_SCREEN_EVENTS.forEach((name) => document.removeEventListener(name, this._onFullScreenChange));
     }
 
     /**
@@ -170,10 +156,9 @@ class DefaultConference extends AbstractConference<IProps, any> {
      *
      * @inheritdoc
      */
-        componentDidMount() {
-            this._start();
-        }
-
+    componentDidMount() {
+        this._start();
+    }
 
     render() {
         const {
@@ -184,63 +169,81 @@ class DefaultConference extends AbstractConference<IProps, any> {
             _showLobby,
             _showPrejoin,
             _showVisitorsQueue,
-            t
+            t,
         } = this.props;
 
         return (
             <div
-                id = 'layout_wrapper'
-                onMouseEnter = { this._onMouseEnter }
-                onMouseLeave = { this._onMouseLeave }
-                onMouseMove = { this._onMouseMove }
-                ref = { this._setBackground }>
+                onMouseEnter={this._onMouseEnter}
+                onMouseLeave={this._onMouseLeave}
+                onMouseMove={this._onMouseMove}
+                ref={this._setBackground}
+                style={{
+                    backgroundColor: 'white',
+                    height: '100vh',
+                    width: '100vw',
+                    display: 'flex', // Ensure this takes full height and is a flex container
+                    flexDirection: 'column', // Stack vertically
+                }}
+            >
                 <div
-                    className = { _layoutClassName }
-                    id = 'videoconference_page'
-                    onMouseMove = { isMobileBrowser() ? undefined : this._onShowToolbar }>
-                    { _showPrejoin || _showLobby || <ConferenceInfo /> }
-                    <Notice />
+                    style={{
+                        display: "flex",
+                        width: "100%",
+                        height: '100%',
+                        backgroundColor: 'white'
+                    }}
+                >
                     <div
-                        id = 'videospace'
-                        onTouchStart = { this._onVideospaceTouchStart }>
-                        <LargeVideo />
-                        {
-                            _showPrejoin || _showLobby || (<>
-                                <StageFilmstrip />
-                                <ScreenshareFilmstrip />
-                                <MainFilmstrip />
-                            </>)
-                        }
+                        style={{
+                            flex: 5, // Takes most space
+                            position: "relative",
+                            backgroundColor: 'white',
+                            height: '100%',
+                            width: '100%'
+                        }}
+                    >
+                        {/* Video */}
+
+                        <div onTouchStart={this._onVideospaceTouchStart} 
+                        style={{
+                            height: '90%',
+                            width: '100%',
+                            backgroundColor: 'black',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center', // Center the video
+                        }}>
+                            <KoreanLargeVideo />
+                        </div>
+
+                        {/* Navbar */}
+                        <div
+                            style={{
+                                position: "absolute",
+                                bottom: 0,
+                                left: 0,
+                                width: "100%", // Doesn't fully extend
+                                height: "10%",
+                                backgroundColor: 'white'
+                            }}
+                        ></div>
                     </div>
 
-                    { _showPrejoin || _showLobby || (
-                        <>
-                            <span
-                                aria-level = { 1 }
-                                className = 'sr-only'
-                                role = 'heading'>
-                                { t('toolbar.accessibilityLabel.heading') }
-                            </span>
-                            <Toolbox />
-                        </>
-                    )}
+                    {/* Right */}
+                    <div
+                        style={{
+                            flex: 1, // Smaller right section
+                            display: "flex",
+                            flexDirection: "column",
+                            backgroundColor: 'white'
+                        }}
+                    ></div>
 
-                    {_notificationsVisible && !_isAnyOverlayVisible && (_overflowDrawer
-                        ? <JitsiPortal className = 'notification-portal'>
-                            {this.renderNotificationsContainer({ portal: true })}
-                        </JitsiPortal>
-                        : this.renderNotificationsContainer())
-                    }
-
-                    <CalleeInfoContainer />
-
-                    { shouldShowPrejoin(this.props) && <Prejoin />}
-                    { (_showLobby && !_showVisitorsQueue) && <LobbyScreen />}
-                    { _showVisitorsQueue && <VisitorsQueue />}
+                    {shouldShowPrejoin(this.props) && <Prejoin />}
+                    {_showLobby && !_showVisitorsQueue && <LobbyScreen />}
+                    {_showVisitorsQueue && <VisitorsQueue />}
                 </div>
-                <Chat />
-                <ParticipantsPane />
-                <ReactionAnimations />
             </div>
         );
     }
@@ -346,11 +349,7 @@ class DefaultConference extends AbstractConference<IProps, any> {
      * @inheritdoc
      */
     _start() {
-        APP.UI.start();
-        APP.UI.bindEvents();
-
-        FULL_SCREEN_EVENTS.forEach(name =>
-            document.addEventListener(name, this._onFullScreenChange));
+        FULL_SCREEN_EVENTS.forEach((name) => document.addEventListener(name, this._onFullScreenChange));
 
         const { dispatch, t } = this.props;
 
@@ -371,20 +370,20 @@ class DefaultConference extends AbstractConference<IProps, any> {
  * @returns {IProps}
  */
 function _mapStateToProps(state: IReduxState) {
-    const { backgroundAlpha, mouseMoveCallbackInterval } = state['features/base/config'];
-    const { overflowDrawer } = state['features/toolbox'];
+    const { backgroundAlpha, mouseMoveCallbackInterval } = state["features/base/config"];
+    const { overflowDrawer } = state["features/toolbox"];
 
     return {
         ...abstractMapStateToProps(state),
         _backgroundAlpha: backgroundAlpha,
         _isAnyOverlayVisible: Boolean(getOverlayToRender(state)),
-        _layoutClassName: LAYOUT_CLASSNAMES[getCurrentLayout(state) ?? ''],
+        _layoutClassName: LAYOUT_CLASSNAMES[getCurrentLayout(state) ?? ""],
         _mouseMoveCallbackInterval: mouseMoveCallbackInterval,
         _overflowDrawer: overflowDrawer,
         _roomName: getConferenceNameForTitle(state),
         _showLobby: getIsLobbyVisible(state),
         _showPrejoin: isPrejoinPageVisible(state),
-        _showVisitorsQueue: showVisitorsQueue(state)
+        _showVisitorsQueue: showVisitorsQueue(state),
     };
 }
 

@@ -4,10 +4,8 @@ import { WithTranslation } from 'react-i18next';
 import { connect as reactReduxConnect } from 'react-redux';
 
 // @ts-expect-error
-import VideoLayout from '../../../../../../modules/UI/videolayout/VideoLayout';
 import { IReduxState, IStore } from '../../../../app/types';
 import { getConferenceNameForTitle } from '../../../../base/conference/functions';
-import { hangup } from '../../../../base/connection/actions.web';
 import { isMobileBrowser } from '../../../../base/environment/utils';
 import { translate } from '../../../../base/i18n/functions';
 import { setColorAlpha } from '../../../../base/util/helpers';
@@ -170,9 +168,9 @@ class DefaultConference extends AbstractConference<IProps, any> {
      *
      * @inheritdoc
      */
-        componentDidMount() {
-            this._start();
-        }
+    componentDidMount() {
+        this._start();
+    }
 
 
     render() {
@@ -346,9 +344,6 @@ class DefaultConference extends AbstractConference<IProps, any> {
      * @inheritdoc
      */
     _start() {
-        APP.UI.start();
-        APP.UI.bindEvents();
-
         FULL_SCREEN_EVENTS.forEach(name =>
             document.addEventListener(name, this._onFullScreenChange));
 
