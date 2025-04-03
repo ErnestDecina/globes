@@ -40,6 +40,8 @@ import type { AbstractProps } from "../../AbstractConference";
 import ConferenceInfo from "../ConferenceInfo";
 import { default as Notice } from "../Notice";
 import ScreenSharePlaceholderWeb from "../../../../large-video/components/ScreenSharePlaceholder.web";
+import KoreanMainFilmstrip from "./KoreanMainFilmstrip";
+import KoreanWebCams from "./KoreanWebCams";
 
 const FULL_SCREEN_EVENTS = ["webkitfullscreenchange", "mozfullscreenchange", "fullscreenchange"];
 
@@ -227,10 +229,12 @@ class DefaultConference extends AbstractConference<IProps, any> {
                                 height: "10%",
                                 backgroundColor: 'white'
                             }}
-                        ></div>
+                        >
+
+                        </div>
                     </div>
 
-                    {/* Right */}
+                    {/* Right Webcam or Chat */}
                     <div
                         style={{
                             flex: 1, // Smaller right section
@@ -238,7 +242,10 @@ class DefaultConference extends AbstractConference<IProps, any> {
                             flexDirection: "column",
                             backgroundColor: 'white'
                         }}
-                    ></div>
+                    >
+                        <KoreanWebCams></KoreanWebCams>
+
+                    </div>
 
                     {shouldShowPrejoin(this.props) && <Prejoin />}
                     {_showLobby && !_showVisitorsQueue && <LobbyScreen />}
