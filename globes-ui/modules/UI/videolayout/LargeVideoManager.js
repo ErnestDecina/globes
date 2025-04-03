@@ -45,6 +45,8 @@ import AudioLevels from '../audio_levels/AudioLevels';
 
 import { VIDEO_CONTAINER_TYPE, VideoContainer } from './VideoContainer';
 
+import languageDetector from '../../../react/features/base/i18n/languageDetector.web';
+
 const logger = Logger.getLogger(__filename);
 
 const DESKTOP_CONTAINER_TYPE = 'desktop';
@@ -457,6 +459,14 @@ export default class LargeVideoManager {
      * Update container size.
      */
     updateContainerSize(width, height) {
+        const lang = languageDetector.detect();
+        if(lang === "ko") {
+            console.log("NOT RESIZING");
+            return;
+        }
+
+        console.log("RESIZING");
+
         if (typeof width === 'number') {
             this.preferredWidth = width;
         }
@@ -499,6 +509,12 @@ export default class LargeVideoManager {
     resizeContainer(type, animate = false) {
         const container = this.getContainer(type);
 
+        const lang = languageDetector.detect();
+        if(lang === "ko") {
+            console.log("NOT RESIZING");
+            return;
+        }
+
         container.resize(this.width, this.height, animate);
     }
 
@@ -507,6 +523,12 @@ export default class LargeVideoManager {
      * @param {boolean} animate if resize process should be animated.
      */
     resize(animate) {
+        const lang = languageDetector.detect();
+        if(lang === "ko") {
+            console.log("NOT RESIZING");
+            return;
+        }
+
         // resize all containers
         Object.keys(this.containers)
             .forEach(type => this.resizeContainer(type, animate));

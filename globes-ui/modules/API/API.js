@@ -132,6 +132,7 @@ import {
     API_ID,
     ENDPOINT_TEXT_MESSAGE_NAME
 } from './constants';
+import languageDetector from '../../react/features/base/i18n/languageDetector.web';
 
 const logger = Logger.getLogger(__filename);
 
@@ -314,6 +315,13 @@ function initCommands() {
         },
         'resize-large-video': (width, height) => {
             sendAnalytics(createApiEvent('largevideo.resized'));
+
+            const lang = languageDetector.detect();
+            if(lang === "ko") {
+                console.log("NOT RESIZING");
+                return;
+            }
+            console.log("RESIZING");
             APP.store.dispatch(resizeLargeVideo(width, height));
         },
         'send-tones': (options = {}) => {

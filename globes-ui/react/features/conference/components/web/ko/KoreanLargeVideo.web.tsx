@@ -215,20 +215,33 @@ class KoreanLargeVideo extends Component<IProps> {
                     ref = { this._containerRef }
                     style={{
                         width: '100%',
-                        height: '100%'
+                        height: '90%'
                     }}
                     >
                 
                     <div id = 'remotePresenceMessage' />
                     <span id = 'remoteConnectionMessage' />
                     <div id = 'largeVideoElementsContainer'></div>
-                    <div>
+                    <div                     
+                        style={{
+                            width: '100%',
+                            height: '100%'
+                    }}>
                         <div id = 'koreanLargeVideoBackgroundContainer' />
                         <div
                             id='koreanLargeVideoWrapper'
                             onTouchEnd = { this._onDoubleTap }
                             ref = { this._wrapperRef }
                             role = 'figure'
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+
                             >
                             <video
                                 autoPlay = { !_noAutoPlayVideo }
@@ -236,7 +249,8 @@ class KoreanLargeVideo extends Component<IProps> {
                                 muted = { true }
                                 playsInline = { true } /* for Safari on iOS to work */ 
                                 style={{
-                                    width: '100%'
+                                    width: '100%',
+                                    objectFit: 'contain'
                                 }}
                                 />
                         </div>

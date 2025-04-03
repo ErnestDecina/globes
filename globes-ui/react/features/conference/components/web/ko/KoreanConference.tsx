@@ -182,8 +182,8 @@ class DefaultConference extends AbstractConference<IProps, any> {
                     backgroundColor: 'white',
                     height: '100vh',
                     width: '100vw',
-                    display: 'flex', // Ensure this takes full height and is a flex container
-                    flexDirection: 'column', // Stack vertically
+                    display: 'flex', 
+                    flexDirection: 'column',
                 }}
             >
                 <div
@@ -212,7 +212,7 @@ class DefaultConference extends AbstractConference<IProps, any> {
                             backgroundColor: 'black',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center', // Center the video
+                            justifyContent: 'center',
                         }}>
                             <KoreanLargeVideo />
                         </div>
