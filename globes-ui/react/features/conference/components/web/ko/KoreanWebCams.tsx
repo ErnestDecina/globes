@@ -65,6 +65,9 @@ class KoreanWebCams extends Component<IProps, IState> {
 
     constructor(props: IProps) {
         super(props);
+
+        this.currentDominantSpeaker = this.props._localParticipant;
+        this.previousDominantSpeaker = this.props._localParticipant;
     }
 
     componentDidMount() {}
