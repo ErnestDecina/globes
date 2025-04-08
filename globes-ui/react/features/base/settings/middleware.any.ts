@@ -28,6 +28,11 @@ MiddlewareRegistry.register(store => next => action => {
         break;
     case SET_LOCATION_URL:
         _updateLocalParticipantFromUrl(store);
+
+        
+
+
+
         break;
     }
 
