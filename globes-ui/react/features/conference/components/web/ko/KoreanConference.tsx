@@ -1,7 +1,7 @@
 import { throttle } from "lodash-es";
 import React from "react";
 import { WithTranslation } from "react-i18next";
-import { connect as reactReduxConnect } from "react-redux";
+import { connect as reactReduxConnect, useSelector } from "react-redux";
 
 // @ts-expect-error
 import VideoLayout from "../../../../../../modules/UI/videolayout/VideoLayout";
@@ -42,6 +42,9 @@ import { default as Notice } from "../Notice";
 import ScreenSharePlaceholderWeb from "../../../../large-video/components/ScreenSharePlaceholder.web";
 import KoreanMainFilmstrip from "./KoreanMainFilmstrip";
 import KoreanWebCams from "./KoreanWebCams";
+import { X, Plus, Volume2, Volume1, Image, FileText, FileEdit, Inbox, MoreVertical, Mic, Video, MessageSquare } from "lucide-react";
+import { toggleChat } from "../../../../chat/actions.web";
+import KoreanChat from "./KoreanChat";
 
 const FULL_SCREEN_EVENTS = ["webkitfullscreenchange", "mozfullscreenchange", "fullscreenchange"];
 
@@ -97,6 +100,8 @@ interface IProps extends AbstractProps, WithTranslation {
      */
     _showVisitorsQueue: boolean;
 
+    _isChatOpen: boolean;
+
     dispatch: IStore["dispatch"];
 }
 
@@ -141,6 +146,10 @@ class DefaultConference extends AbstractConference<IProps, any> {
         this._onFullScreenChange = this._onFullScreenChange.bind(this);
         this._onVideospaceTouchStart = this._onVideospaceTouchStart.bind(this);
         this._setBackground = this._setBackground.bind(this);
+        this._onChatButtonClick = this._onChatButtonClick.bind(this);
+
+
+
     }
 
     /**
@@ -181,56 +190,266 @@ class DefaultConference extends AbstractConference<IProps, any> {
                 onMouseMove={this._onMouseMove}
                 ref={this._setBackground}
                 style={{
-                    backgroundColor: 'white',
-                    height: '100vh',
-                    width: '100vw',
-                    display: 'flex', 
-                    flexDirection: 'column',
+                    backgroundColor: "white",
+                    height: "100vh",
+                    width: "100vw",
+                    display: "flex",
+                    flexDirection: "column",
                 }}
             >
                 <div
                     style={{
                         display: "flex",
                         width: "100%",
-                        height: '100%',
-                        backgroundColor: 'white'
+                        height: "100%",
+                        backgroundColor: "white"
                     }}
                 >
                     <div
                         style={{
                             flex: 5, // Takes most space
                             position: "relative",
-                            backgroundColor: 'white',
-                            height: '100%',
-                            width: '100%'
+                            backgroundColor: "white",
+                            height: "100%",
+                            width: "100%",
                         }}
                     >
                         {/* Video */}
 
-                        <div onTouchStart={this._onVideospaceTouchStart} 
-                        style={{
-                            height: '90%',
-                            width: '100%',
-                            backgroundColor: 'black',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}>
+                        <div
+                            onTouchStart={this._onVideospaceTouchStart}
+                            style={{
+                                height: "90%",
+                                width: "100%",
+                                backgroundColor: "black",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                            }}
+                        >
                             <KoreanLargeVideo />
                         </div>
 
-                        {/* Navbar */}
+                        {/* Navbar - FIXED */}
                         <div
                             style={{
                                 position: "absolute",
-                                bottom: 0,
-                                left: 0,
-                                width: "100%", // Doesn't fully extend
-                                height: "10%",
-                                backgroundColor: 'white'
+                                width: "100%",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexDirection: "row"
                             }}
                         >
+                            <div
+                                style={{
+                                    width: "100%",
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    padding: "8px",
+                                    backgroundColor: "#f3f4f6"
+                                }}
+                            >
+                                {/* 3-dot menu on the left */}
+                                <div
+                                    style={{
+                                        flexShrink: 0
+                                    }}
+                                >
+                                    <button
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "40px",
+                                            height: "40px",
+                                            borderRadius: "50%",
+                                            backgroundColor: "#d1d5db",
+                                            color: "#374151",
+                                            border: "none",
+                                            cursor: "pointer"
+                                        }}
+                                    >
+                                        <MoreVertical size={20} />
+                                    </button>
+                                </div>
 
+                                {/* Centered action buttons */}
+                                <div
+                                    style={{
+                                        flexGrow: 1,
+                                        display: "flex",
+                                        flexDirection: "row",
+                                        justifyContent: "center",
+                                        gap: "8px"
+                                    }}
+                                >
+                                    <button
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "40px",
+                                            height: "40px",
+                                            borderRadius: "50%",
+                                            backgroundColor: "#ef4444",
+                                            color: "white",
+                                            border: "none",
+                                            cursor: "pointer"
+                                        }}
+                                    >
+                                        <X size={20} />
+                                    </button>
+
+                                    <button
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "40px",
+                                            height: "40px",
+                                            borderRadius: "50%",
+                                            backgroundColor: "#22c55e",
+                                            color: "white",
+                                            border: "none",
+                                            cursor: "pointer"
+                                        }}
+                                    >
+                                        <Mic size={20} />
+                                    </button>
+
+                                    <button
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "40px",
+                                            height: "40px",
+                                            borderRadius: "50%",
+                                            backgroundColor: "#3b82f6",
+                                            color: "white",
+                                            border: "none",
+                                            cursor: "pointer"
+                                        }}
+                                    >
+                                        <Volume2 size={20} />
+                                    </button>
+
+                                    <button
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "40px",
+                                            height: "40px",
+                                            borderRadius: "50%",
+                                            backgroundColor: "#60a5fa",
+                                            color: "white",
+                                            border: "none",
+                                            cursor: "pointer"
+                                        }}
+                                    >
+                                        <Video size={20} />
+                                    </button>
+
+                                    <button
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "40px",
+                                            height: "40px",
+                                            borderRadius: "50%",
+                                            backgroundColor: "#6b7280",
+                                            color: "white",
+                                            border: "none",
+                                            cursor: "pointer"
+                                        }}
+                                    >
+                                        <Image size={20} />
+                                    </button>
+
+                                    <button
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "40px",
+                                            height: "40px",
+                                            borderRadius: "50%",
+                                            backgroundColor: "#6b7280",
+                                            color: "white",
+                                            border: "none",
+                                            cursor: "pointer"
+                                        }}
+                                    >
+                                        <FileText size={20} />
+                                    </button>
+
+                                    <button
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "40px",
+                                            height: "40px",
+                                            borderRadius: "50%",
+                                            backgroundColor: "#6b7280",
+                                            color: "white",
+                                            border: "none",
+                                            cursor: "pointer"
+                                        }}
+                                    >
+                                        <FileEdit size={20} />
+                                    </button>
+
+                                    <button
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "40px",
+                                            height: "40px",
+                                            borderRadius: "50%",
+                                            backgroundColor: "#6b7280",
+                                            color: "white",
+                                            border: "none",
+                                            cursor: "pointer"
+                                        }}
+                                    >
+                                        <Inbox size={20} />
+                                    </button>
+                                </div>
+
+                                {/* Help button on the right */}
+                                <div
+                                    style={{
+                                        flexShrink: 0
+                                    }}
+                                >
+                                    <button
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "40px",
+                                            height: "40px",
+                                            borderRadius: "50%",
+                                            backgroundColor: "#d1d5db",
+                                            color: "#374151",
+                                            border: "none",
+                                            cursor: "pointer"
+                                        }}
+                                        onClick={this._onChatButtonClick}
+                                    >
+
+                                        <MessageSquare 
+                                        size={20}
+                                        ></MessageSquare>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -240,11 +459,18 @@ class DefaultConference extends AbstractConference<IProps, any> {
                             flex: 1, // Smaller right section
                             display: "flex",
                             flexDirection: "column",
-                            backgroundColor: 'white'
+                            backgroundColor: "white",
                         }}
                     >
-                        <KoreanWebCams></KoreanWebCams>
-
+                        {this.props._isChatOpen ? 
+                        (<div
+                            style={{
+                                height: "100%"
+                            }}>
+                            <KoreanChat  />
+                        </div>) : 
+                        (<KoreanWebCams/>)}
+                        
                     </div>
 
                     {shouldShowPrejoin(this.props) && <Prejoin />}
@@ -254,6 +480,25 @@ class DefaultConference extends AbstractConference<IProps, any> {
             </div>
         );
     }
+
+
+    _onChatButtonClick(event: React.MouseEvent<HTMLDivElement>) {  
+        if (!event) {
+            return;
+        }
+
+        if(this.props._isChatOpen !== undefined) {
+            const oldIsOpen = this.props._isChatOpen;
+            const isOpen = oldIsOpen ? false : true;
+            this.props.dispatch(toggleChat());
+
+
+
+            console.log(isOpen)
+        }
+
+    }
+
 
     /**
      * Sets custom background opacity based on config. It also applies the
@@ -379,6 +624,8 @@ class DefaultConference extends AbstractConference<IProps, any> {
 function _mapStateToProps(state: IReduxState) {
     const { backgroundAlpha, mouseMoveCallbackInterval } = state["features/base/config"];
     const { overflowDrawer } = state["features/toolbox"];
+    const { isOpen } = state["features/chat"];
+    
 
     return {
         ...abstractMapStateToProps(state),
@@ -391,7 +638,10 @@ function _mapStateToProps(state: IReduxState) {
         _showLobby: getIsLobbyVisible(state),
         _showPrejoin: isPrejoinPageVisible(state),
         _showVisitorsQueue: showVisitorsQueue(state),
+        _isChatOpen: isOpen
     };
 }
 
 export default reactReduxConnect(_mapStateToProps)(translate(DefaultConference));
+
+

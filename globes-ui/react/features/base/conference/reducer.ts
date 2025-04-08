@@ -217,6 +217,7 @@ ReducerRegistry.register<IConferenceState>('features/base/conference',
             return _conferenceFailed(state, action);
 
         case CONFERENCE_JOINED:
+            console.log("Conference Joined")
             return _conferenceJoined(state, action);
 
         case CONFERENCE_SUBJECT_CHANGED:
