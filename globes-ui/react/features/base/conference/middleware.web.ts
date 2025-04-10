@@ -102,41 +102,7 @@ MiddlewareRegistry.register(store => next => async action => {
 
     switch (action.type) {
     case CONFERENCE_JOIN_IN_PROGRESS: {
-        
             dispatch(setPrejoinPageVisibility(false));
-            const { callee } = getState()['features/base/jwt'];
-            const { callDisplayName } = getState()['features/base/config'];
-            const { localSubject, pendingSubjectChange, room, subject } = getConferenceState(getState());
-        
-            // Assuming 'locationURL' is used to extract the meeting's URL or identifier.
-            // You might need to adjust this based on your actual data structure
-            const { locationURL = { href: '' } as URL } = getState()['features/base/connection'];
-        
-            const url = locationURL.pathname.slice(1);  // Remove the leading slash to get the UUID or room identifier
-        
-            try {
-                // Make the GET request to fetch meeting data using the extracted URL
-                const response = await fetch(`http://localhost:3000/api/v1/meetings/${url}`);
-                if (!response.ok) {
-                    throw new Error(`Error: ${response.status}`);
-                }
-        
-                // Parse the response JSON
-                const data = await response.json();
-                console.log(data);  // Optionally log the fetched data
-        
-                // Return the meeting name from the fetched data
-                return String(data.meetingName);
-            } catch (error) {
-                // Handle any errors that might occur during the fetch operation
-                console.error('There was an error with the fetch operation:', error);
-                // Return a default name in case of failure
-                return 'Meeting';
-            }
-        
-
-
-
         break;
     }
     case CONFERENCE_JOINED: {

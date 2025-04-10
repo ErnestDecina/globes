@@ -38,7 +38,7 @@ TranslatedMessages.init(
         },
 
         messageId: {
-            type: DataTypes.UUID,
+            type: DataTypes.STRING,
             allowNull: false,
             references: {
                 model: 'Messages',

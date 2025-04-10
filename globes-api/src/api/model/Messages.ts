@@ -24,8 +24,7 @@ class Messages extends Model<MessageAttributes, MessageInput> implements Message
 Messages.init(
     {
         messageId: {
-            type: DataTypes.UUID,
-            defaultValue: DataTypes.UUIDV4,
+            type: DataTypes.STRING,
             primaryKey: true,
             allowNull: false,
             unique: true,

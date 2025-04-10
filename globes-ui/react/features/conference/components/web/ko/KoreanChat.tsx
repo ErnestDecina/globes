@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { connect } from 'react-redux';
 import { makeStyles } from 'tss-react/mui';
 
@@ -20,6 +20,9 @@ import KeyboardAvoider from '../../../../chat/components/web/KeyboardAvoider';
 import MessageContainer from '../../../../chat/components/web/MessageContainer';
 import MessageRecipient from '../../../../chat/components/web/MessageRecipient';
 import KoreanChatInput from './KoreanChatInput';
+import axios from 'axios';
+import { languages } from '@jitsi/excalidraw';
+import languageDetector from '../../../../base/i18n/languageDetector.web';
 
 interface IProps extends AbstractProps {
 
@@ -81,6 +84,8 @@ interface IProps extends AbstractProps {
 
 
     _locationURL: URL;
+
+    _state: IReduxState;
 }
 
 const useStyles = makeStyles()(theme => {
@@ -161,6 +166,7 @@ const KoreanChat = ({
     _onTogglePollsTab,
     _showNamePrompt,
     _locationURL,
+    _state,
     dispatch,
     t
 }: IProps) => {
@@ -175,13 +181,9 @@ const KoreanChat = ({
     * @type {Function}
     */
     const onSendMessage = useCallback((text: string) => {
-        dispatch(sendMessage(text));
-
-        // Get meeting uuid and upload message
         const url = _locationURL.pathname.slice(1);
-
-        console.log(url);
-
+        dispatch({type: "UPDATE_LOCATION", location: url});
+        dispatch(sendMessage(text));
     }, []);
 
     /**
@@ -216,6 +218,7 @@ const KoreanChat = ({
     const onChangeTab = useCallback((id: string) => {
         dispatch(setIsPollsTabFocused(id !== CHAT_TABS.CHAT));
     }, []);
+
 
     /**
      * Returns a React Element for showing chat messages and a form to send new
@@ -282,7 +285,7 @@ function _mapStateToProps(state: IReduxState, _ownProps: any) {
 
 
     const { locationURL = { href: '' } as URL } = state['features/base/connection'];
-
+    
     return {
         _isModal: window.innerWidth <= SMALL_WIDTH_THRESHOLD,
         _isOpen: isOpen,
@@ -292,7 +295,8 @@ function _mapStateToProps(state: IReduxState, _ownProps: any) {
         _nbUnreadMessages: nbUnreadMessages,
         _nbUnreadPolls: nbUnreadPolls,
         _showNamePrompt: !_localParticipant?.name,
-        _locationURL: locationURL
+        _locationURL: locationURL,
+        _state: state
     };
 }
 

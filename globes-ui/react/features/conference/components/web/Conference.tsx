@@ -121,6 +121,8 @@ interface IProps extends AbstractProps, WithTranslation {
     // Korea UI
     _koreanUI: any;
 
+    _location: URL;
+
     dispatch: IStore['dispatch'];
 }
 
@@ -196,6 +198,10 @@ class Conference extends AbstractConference<IProps, any> {
      * @inheritdoc
      */
     componentDidMount() {
+        const url = this.props._location.pathname.slice(1);
+        console.log(`HI: ${url}`);
+        this.props.dispatch({type: "UPDATE_LOCATION", location: url});
+
         this._start();
     }
 
@@ -240,6 +246,7 @@ class Conference extends AbstractConference<IProps, any> {
 function _mapStateToProps(state: IReduxState) {
     const { backgroundAlpha, mouseMoveCallbackInterval } = state['features/base/config'];
     const { overflowDrawer } = state['features/toolbox'];
+    const { locationURL = { href: '' } as URL } = state['features/base/connection'];
 
     return {
         ...abstractMapStateToProps(state),
@@ -251,7 +258,8 @@ function _mapStateToProps(state: IReduxState) {
         _roomName: getConferenceNameForTitle(state),
         _showLobby: getIsLobbyVisible(state),
         _showPrejoin: isPrejoinPageVisible(state),
-        _showVisitorsQueue: showVisitorsQueue(state)
+        _showVisitorsQueue: showVisitorsQueue(state),
+        _location: locationURL
     };
 }
 

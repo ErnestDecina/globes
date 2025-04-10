@@ -36,8 +36,10 @@ import { showToolbox } from '../toolbox/actions';
 
 import {
     ADD_MESSAGE,
+    ADD_MESSAGE_REDUCER,
     CLOSE_CHAT,
     OPEN_CHAT,
+    RERENDER_CHAT,
     SEND_MESSAGE,
     SEND_REACTION,
     SET_IS_POLL_TAB_FOCUSED
@@ -54,6 +56,9 @@ import {
 } from './constants';
 import { getUnreadCount } from './functions';
 import { INCOMING_MSG_SOUND_FILE } from './sounds';
+import { LANGUAGE_CHANGED } from '../base/i18n/actionTypes';
+import languageDetector from '../base/i18n/languageDetector.web';
+import axios from 'axios';
 
 /**
  * Timeout for when to show the privacy notice after a private message was received.
@@ -69,7 +74,7 @@ const PRIVACY_NOTICE_TIMEOUT = 20 * 1000;
  * @param {Store} store - The redux store.
  * @returns {Function}
  */
-MiddlewareRegistry.register(store => next => action => {
+MiddlewareRegistry.register(store => next => async action => {
     const { dispatch, getState } = store;
     const localParticipant = getLocalParticipant(getState());
     let isOpen, unreadCount;
@@ -87,6 +92,37 @@ MiddlewareRegistry.register(store => next => action => {
         if (typeof APP !== 'undefined') {
             APP.API.notifyChatUpdated(unreadCount, isOpen);
         }
+
+        if(action.messageType === "local") {
+            const { locationURL = { href: '' } as URL } = getState()['features/base/connection'];
+            const url = locationURL.pathname.slice(1);
+            const language = languageDetector.detect();
+            console.log(action);
+            console.log(`${url} ${language}`);
+            try {
+                axios.post(`http://localhost:3000/api/v1/meetings/${url}/messages`, {originalMessage: action.message, messageId: action.messageId, language: language});
+            } catch(error) {
+                console.error(error);
+            }     
+        }
+
+        
+
+
+        dispatch({
+            ...action,
+            type: ADD_MESSAGE_REDUCER
+        });
+
+        await dispatch({
+            type: LANGUAGE_CHANGED,
+            participantId: localParticipant?.id
+        });
+
+        dispatch({
+            type: RERENDER_CHAT
+        })
+
         break;
 
     case APP_WILL_MOUNT:
@@ -241,6 +277,11 @@ MiddlewareRegistry.register(store => next => action => {
             }, false, true);
         }
     }
+
+    case "GET_TRANSLATIONS": {
+        
+    }
+
     }
 
     return next(action);

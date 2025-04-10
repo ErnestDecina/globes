@@ -610,6 +610,9 @@ class DefaultConference extends AbstractConference<IProps, any> {
         dispatch(init(!shouldShowPrejoin(this.props)));
 
         maybeShowSuboptimalExperienceNotification(dispatch, t);
+
+
+        
     }
 }
 

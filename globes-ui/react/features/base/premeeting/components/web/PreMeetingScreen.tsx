@@ -221,20 +221,24 @@ const PreMeetingScreen = ({
         }
     }, [ _roomName, roomName ]);
 
-    useEffect(async () => {
-        const { locationURL = { href: '' } as URL } = _state['features/base/connection'];
-        const url = locationURL.pathname.slice(1);  // Remove the leading slash to get the UUID or room identifier
+    useEffect(() => {
+        const fetchData = async () => {
+            const { locationURL = { href: '' } as URL } = _state['features/base/connection'];
+            const url = locationURL.pathname.slice(1);  // Remove the leading slash to get the UUID or room identifier
+        
+            try {
+                // Make the GET request to fetch meeting data using the extracted URL
+                const response = await axios.get(`http://localhost:3000/api/v1/meetings/${url}`);
+                const data = await response.data;
+                setRoomName(data.meetingName);
     
-        try {
-            // Make the GET request to fetch meeting data using the extracted URL
-            const response = await axios.get(`http://localhost:3000/api/v1/meetings/${url}`);
-            const data = await response.data;
-            setRoomName(data.meetingName);
-
-        } catch (error) {
-            // Handle any errors that might occur during the fetch operation
-            console.error('There was an error with the fetch operation:', error);
+            } catch (error) {
+                // Handle any errors that might occur during the fetch operation
+                console.error('There was an error with the fetch operation:', error);
+            }
         }
+
+        fetchData();
     }, [])
 
     return (
