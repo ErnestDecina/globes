@@ -42,10 +42,15 @@ import { default as Notice } from "../Notice";
 import ScreenSharePlaceholderWeb from "../../../../large-video/components/ScreenSharePlaceholder.web";
 import KoreanMainFilmstrip from "./KoreanMainFilmstrip";
 import KoreanWebCams from "./KoreanWebCams";
-import { X, Plus, Volume2, Volume1, Image, FileText, FileEdit, Inbox, MoreVertical, Mic, Video, MessageSquare } from "lucide-react";
+import { X, Plus, Volume2, Volume1, Image, FileText, FileEdit, Inbox, MoreVertical, Mic, MicOff, Video, MessageSquare } from "lucide-react";
 import { toggleChat } from "../../../../chat/actions.web";
 import { leaveConference } from '../../../../base/conference/actions.web';
 import KoreanChat from "./KoreanChat";
+import { openSettingsDialog } from "../../../../settings/actions.web";
+import { IGUMPendingState } from "../../../../base/media/types";
+import { isLocalTrackMuted } from "../../../../base/tracks/functions.web";
+import { MEDIA_TYPE } from "../../../../base/media/constants";
+import { muteLocal } from "../../../../video-menu/actions.web";
 
 const FULL_SCREEN_EVENTS = ["webkitfullscreenchange", "mozfullscreenchange", "fullscreenchange"];
 
@@ -103,6 +108,10 @@ interface IProps extends AbstractProps, WithTranslation {
 
     _isChatOpen: boolean;
 
+    _gumPending: IGUMPendingState;
+
+    _audioMuted: boolean;
+
     dispatch: IStore["dispatch"];
 }
 
@@ -149,6 +158,8 @@ class DefaultConference extends AbstractConference<IProps, any> {
         this._setBackground = this._setBackground.bind(this);
         this._onChatButtonClick = this._onChatButtonClick.bind(this);
         this._onLeaveButtonClick = this._onLeaveButtonClick.bind(this);
+        this._onSettingsButtonClick = this._onSettingsButtonClick.bind(this);
+        this._onMuteAudioButtonClick= this._onMuteAudioButtonClick.bind(this);
     }
 
     /**
@@ -269,6 +280,7 @@ class DefaultConference extends AbstractConference<IProps, any> {
                                             border: "none",
                                             cursor: "pointer"
                                         }}
+                                        onClick={this._onSettingsButtonClick}
                                     >
                                         <MoreVertical size={20} />
                                     </button>
@@ -301,8 +313,7 @@ class DefaultConference extends AbstractConference<IProps, any> {
                                     >
                                         <X size={20} />
                                     </button>
-
-                                    <button
+                                    {!this.props._audioMuted ? <button
                                         style={{
                                             display: "flex",
                                             alignItems: "center",
@@ -315,9 +326,29 @@ class DefaultConference extends AbstractConference<IProps, any> {
                                             border: "none",
                                             cursor: "pointer"
                                         }}
-                                    >
-                                        <Mic size={20} />
-                                    </button>
+                                        onClick={this._onMuteAudioButtonClick}
+                                    >   
+                                        <Mic  size={20} />      
+                                    </button> : <button
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "40px",
+                                            height: "40px",
+                                            borderRadius: "50%",
+                                            backgroundColor: "red",
+                                            color: "white",
+                                            border: "none",
+                                            cursor: "pointer"
+                                        }}
+                                        onClick={this._onMuteAudioButtonClick}
+                                    >   
+                                        <MicOff  size={20} />      
+                                    </button>}
+                                    
+
+                                    
 
                                     <button
                                         style={{
@@ -506,6 +537,22 @@ class DefaultConference extends AbstractConference<IProps, any> {
         this.props.dispatch(leaveConference());
     }
 
+    _onSettingsButtonClick(event: React.MouseEvent<HTMLDivElement>) { 
+        if (!event) {
+            return;
+        }
+
+        this.props.dispatch(openSettingsDialog(undefined, false));
+    }
+
+    _onMuteAudioButtonClick(event: React.MouseEvent<HTMLDivElement>) {
+        if (!event) {
+            return;
+        }
+
+        this.props.dispatch(muteLocal(!this.props._audioMuted, MEDIA_TYPE.AUDIO));
+    }
+
 
     /**
      * Sets custom background opacity based on config. It also applies the
@@ -635,7 +682,8 @@ function _mapStateToProps(state: IReduxState) {
     const { backgroundAlpha, mouseMoveCallbackInterval } = state["features/base/config"];
     const { overflowDrawer } = state["features/toolbox"];
     const { isOpen } = state["features/chat"];
-    
+    const { gumPending } = state['features/base/media'].audio;
+    const _audioMuted = isLocalTrackMuted(state['features/base/tracks'], MEDIA_TYPE.AUDIO);
 
     return {
         ...abstractMapStateToProps(state),
@@ -648,7 +696,9 @@ function _mapStateToProps(state: IReduxState) {
         _showLobby: getIsLobbyVisible(state),
         _showPrejoin: isPrejoinPageVisible(state),
         _showVisitorsQueue: showVisitorsQueue(state),
-        _isChatOpen: isOpen
+        _isChatOpen: isOpen,
+        _gumPending: gumPending,
+        _audioMuted: _audioMuted
     };
 }
 

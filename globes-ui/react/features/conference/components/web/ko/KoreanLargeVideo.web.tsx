@@ -246,7 +246,7 @@ class KoreanLargeVideo extends Component<IProps> {
                             <video
                                 autoPlay = { !_noAutoPlayVideo }
                                 id = 'largeVideo'
-                                muted = { true }
+                                muted = { false }
                                 playsInline = { true } /* for Safari on iOS to work */ 
                                 style={{
                                     width: '100%',
