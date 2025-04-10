@@ -44,6 +44,7 @@ import KoreanMainFilmstrip from "./KoreanMainFilmstrip";
 import KoreanWebCams from "./KoreanWebCams";
 import { X, Plus, Volume2, Volume1, Image, FileText, FileEdit, Inbox, MoreVertical, Mic, Video, MessageSquare } from "lucide-react";
 import { toggleChat } from "../../../../chat/actions.web";
+import { leaveConference } from '../../../../base/conference/actions.web';
 import KoreanChat from "./KoreanChat";
 
 const FULL_SCREEN_EVENTS = ["webkitfullscreenchange", "mozfullscreenchange", "fullscreenchange"];
@@ -147,9 +148,7 @@ class DefaultConference extends AbstractConference<IProps, any> {
         this._onVideospaceTouchStart = this._onVideospaceTouchStart.bind(this);
         this._setBackground = this._setBackground.bind(this);
         this._onChatButtonClick = this._onChatButtonClick.bind(this);
-
-
-
+        this._onLeaveButtonClick = this._onLeaveButtonClick.bind(this);
     }
 
     /**
@@ -298,6 +297,7 @@ class DefaultConference extends AbstractConference<IProps, any> {
                                             border: "none",
                                             cursor: "pointer"
                                         }}
+                                        onClick={this._onLeaveButtonClick}
                                     >
                                         <X size={20} />
                                     </button>
@@ -497,6 +497,13 @@ class DefaultConference extends AbstractConference<IProps, any> {
             console.log(isOpen)
         }
 
+    }
+
+    _onLeaveButtonClick(event: React.MouseEvent<HTMLDivElement>) {
+        if (!event) {
+            return;
+        }
+        this.props.dispatch(leaveConference());
     }
 
 
