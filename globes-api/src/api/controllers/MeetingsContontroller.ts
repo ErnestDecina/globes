@@ -38,7 +38,10 @@ class MeetingsController {
     ): Promise<void> {
         try {
             const messageDetails: MessageInput = req.body;
+            messageDetails.messageId = req.body.messageId;
             messageDetails.meetingId = req.params.uuid
+
+            console.log(messageDetails)
             res.status(200).send(await MeetingsService.postMessage(messageDetails));
         } catch (error) {
             res.status(400).send();

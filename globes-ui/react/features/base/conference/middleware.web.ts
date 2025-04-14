@@ -27,6 +27,7 @@ import { TRIGGER_READY_TO_CLOSE_REASONS } from './constants';
 import logger from './logger';
 
 import './middleware.any';
+import { getConferenceState } from './functions';
 
 let screenLock: WakeLockSentinel | undefined;
 
@@ -95,14 +96,13 @@ function onWakeLockReleased() {
     logger.debug('Wake lock released');
 }
 
-MiddlewareRegistry.register(store => next => action => {
+MiddlewareRegistry.register(store => next => async action => {
     const { dispatch, getState } = store;
     const { enableForcedReload } = getState()['features/base/config'];
 
     switch (action.type) {
     case CONFERENCE_JOIN_IN_PROGRESS: {
-        dispatch(setPrejoinPageVisibility(false));
-
+            dispatch(setPrejoinPageVisibility(false));
         break;
     }
     case CONFERENCE_JOINED: {

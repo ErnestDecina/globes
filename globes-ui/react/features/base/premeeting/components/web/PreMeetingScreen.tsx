@@ -19,6 +19,9 @@ import Preview from './Preview';
 import RecordingWarning from './RecordingWarning';
 import UnsafeRoomWarning from './UnsafeRoomWarning';
 
+import axios from 'axios';
+import { IState } from '../../../../connection-indicator/components/AbstractConnectionIndicator';
+
 interface IProps {
 
     /**
@@ -40,6 +43,8 @@ interface IProps {
      * The name of the meeting that is about to be joined.
      */
     _roomName: string;
+
+    _state: IState;
 
     /**
      * Children component(s) to be rendered on the screen.
@@ -192,7 +197,8 @@ const PreMeetingScreen = ({
     skipPrejoinButton,
     title,
     videoMuted,
-    videoTrack
+    videoTrack,
+    _state
 }: IProps) => {
     const { classes } = useStyles();
     const style = _premeetingBackground ? {
@@ -203,6 +209,7 @@ const PreMeetingScreen = ({
 
     const roomNameRef = useRef<HTMLSpanElement | null>(null);
     const [ isOverflowing, setIsOverflowing ] = useState(false);
+    const [ roomName, setRoomName ] = useState(_roomName);
 
     useEffect(() => {
         if (roomNameRef.current) {
@@ -212,7 +219,27 @@ const PreMeetingScreen = ({
 
             setIsOverflowing(element.scrollWidth > elementWidth + 1);
         }
-    }, [ _roomName ]);
+    }, [ _roomName, roomName ]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const { locationURL = { href: '' } as URL } = _state['features/base/connection'];
+            const url = locationURL.pathname.slice(1);  // Remove the leading slash to get the UUID or room identifier
+        
+            try {
+                // Make the GET request to fetch meeting data using the extracted URL
+                const response = await axios.get(`http://localhost:3000/api/v1/meetings/${url}`);
+                const data = await response.data;
+                setRoomName(data.meetingName);
+    
+            } catch (error) {
+                // Handle any errors that might occur during the fetch operation
+                console.error('There was an error with the fetch operation:', error);
+            }
+        }
+
+        fetchData();
+    }, [])
 
     return (
         <div className = { clsx('premeeting-screen', classes.container, className) }>
@@ -227,18 +254,18 @@ const PreMeetingScreen = ({
                         {_roomName && (
                             <span className = { classes.roomNameContainer }>
                                 {isOverflowing ? (
-                                    <Tooltip content = { _roomName }>
+                                    <Tooltip content = { roomName }>
                                         <span
                                             className = { classes.roomName }
                                             ref = { roomNameRef }>
-                                            {_roomName}
+                                            {roomName}
                                         </span>
                                     </Tooltip>
                                 ) : (
                                     <span
                                         className = { classes.roomName }
                                         ref = { roomNameRef }>
-                                        {_roomName}
+                                        {roomName}
                                     </span>
                                 )}
                             </span>
@@ -275,19 +302,15 @@ function mapStateToProps(state: IReduxState, ownProps: Partial<IProps>) {
         : PREMEETING_BUTTONS).filter((b: any) => !(hiddenPremeetingButtons || []).includes(b));
 
     const { premeetingBackground } = state['features/dynamic-branding'];
-
+    
     return {
-        // For keeping backwards compat.: if we pass an empty hiddenPremeetingButtons
-        // array through external api, we have all prejoin buttons present on premeeting
-        // screen regardless of passed values into toolbarButtons config overwrite.
-        // If hiddenPremeetingButtons is missing, we hide the buttons according to
-        // toolbarButtons config overwrite.
         _buttons: hiddenPremeetingButtons
             ? premeetingButtons
             : premeetingButtons.filter(b => isButtonEnabled(b, toolbarButtons)),
         _isPreCallTestEnabled: isPreCallTestEnabled(state),
         _premeetingBackground: premeetingBackground,
-        _roomName: isRoomNameEnabled(state) ? getConferenceName(state) : ''
+        _roomName: isRoomNameEnabled(state) ? getConferenceName(state) : '',
+        _state: state
     };
 }
 

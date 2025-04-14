@@ -55,14 +55,14 @@ class MeetingsService implements IMeetingsService {
             }
             TranslationsRepository.addTranslation(koreanTranslation);
 
-            // Translate to German
-            const germanTranslation: TranslationInput = {
-                messageId: message.messageId,
-                meetingId: message.meetingId,
-                translation_message: await translateTextToLanguageNoContext('de', message.originalMessage),
-                translated_language: 'de'
-            }
-            TranslationsRepository.addTranslation(germanTranslation);
+            // // Translate to German
+            // const germanTranslation: TranslationInput = {
+            //     messageId: message.messageId,
+            //     meetingId: message.meetingId,
+            //     translation_message: await translateTextToLanguageNoContext('de', message.originalMessage),
+            //     translated_language: 'de'
+            // }
+            // TranslationsRepository.addTranslation(germanTranslation);
 
             
             return message;

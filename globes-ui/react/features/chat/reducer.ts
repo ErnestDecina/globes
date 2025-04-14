@@ -1,14 +1,20 @@
+import axios from 'axios';
+import { LANGUAGE_CHANGED } from '../base/i18n/actionTypes';
+import languageDetector from '../base/i18n/languageDetector.web';
 import { ILocalParticipant, IParticipant } from '../base/participants/types';
 import ReducerRegistry from '../base/redux/ReducerRegistry';
+
 
 import {
     ADD_MESSAGE,
     ADD_MESSAGE_REACTION,
+    ADD_MESSAGE_REDUCER,
     CLEAR_MESSAGES,
     CLOSE_CHAT,
     EDIT_MESSAGE,
     OPEN_CHAT,
     REMOVE_LOBBY_CHAT_PARTICIPANT,
+    RERENDER_CHAT,
     SET_IS_POLL_TAB_FOCUSED,
     SET_LOBBY_CHAT_ACTIVE_STATE,
     SET_LOBBY_CHAT_RECIPIENT,
@@ -21,11 +27,14 @@ const DEFAULT_STATE = {
     isPollsTabFocused: false,
     lastReadMessage: undefined,
     messages: [],
+    originalMessages: [],
+    displayMessages: [],
     reactions: {},
     nbUnreadMessages: 0,
     privateMessageRecipient: undefined,
     lobbyMessageRecipient: undefined,
-    isLobbyChatActive: false
+    isLobbyChatActive: false,
+    location: ""
 };
 
 export interface IChatState {
@@ -38,13 +47,16 @@ export interface IChatState {
         name: string;
     } | ILocalParticipant;
     messages: IMessage[];
+    originalMessages: IMessage[];
+    displayMessages: IMessage[];
     nbUnreadMessages: number;
     privateMessageRecipient?: IParticipant;
+    location: string;
 }
 
 ReducerRegistry.register<IChatState>('features/chat', (state = DEFAULT_STATE, action): IChatState => {
     switch (action.type) {
-    case ADD_MESSAGE: {
+    case ADD_MESSAGE_REDUCER: {
         const newMessage: IMessage = {
             displayName: action.displayName,
             error: action.error,
@@ -57,7 +69,7 @@ ReducerRegistry.register<IChatState>('features/chat', (state = DEFAULT_STATE, ac
             privateMessage: action.privateMessage,
             lobbyChat: action.lobbyChat,
             recipient: action.recipient,
-            timestamp: action.timestamp
+            timestamp: action.timestamp,
         };
 
         // React native, unlike web, needs a reverse sorted message list.
@@ -166,6 +178,8 @@ ReducerRegistry.register<IChatState>('features/chat', (state = DEFAULT_STATE, ac
             privateMessageRecipient: action.participant,
             isLobbyChatActive: false
         };
+    
+
 
     case SET_IS_POLL_TAB_FOCUSED: {
         return {
@@ -203,7 +217,69 @@ ReducerRegistry.register<IChatState>('features/chat', (state = DEFAULT_STATE, ac
             isLobbyChatActive: false,
             lobbyMessageRecipient: undefined
         };
+    
+    case LANGUAGE_CHANGED:  {
+        const temp = [ ...state.originalMessages ];
+        const language = languageDetector.detect();
+
+        console.log(state.location);
+
+        (async () => {
+            await wait(5000);
+            const data = await getTranslatedMessages(state.location, language || '');
+
+            console.log(data);
+            const messages = state.messages.map(m => {
+                data.map(translatedMessage => {
+                    if(translatedMessage.messageId === m.messageId && m.messageType !== "local") {
+                        m.message = translatedMessage.translation_message;
+                    }
+                })
+                return m;
+            });
+
+            return {
+                ...state,
+                messages: messages
+            }
+        })();
+
+        break;
     }
 
+    case RERENDER_CHAT: {
+        return {
+            ...state,
+            messages: state.messages
+        }
+        break;
+    }
+
+    case "UPDATE_LOCATION": {
+        return {
+            ...state,
+            location: action.location
+        }
+    }
+    }
+
+
+    
+
     return state;
+
+    
 });
+
+
+async function getTranslatedMessages(location: string, lang: string): Promise<any> {
+    console.log(`http://localhost:3000/api/v1/meetings/${location}/translations?lang=${lang}`);
+    const data = await axios.get(`http://localhost:3000/api/v1/meetings/${location}/translations?lang=${lang}`);
+    
+    return await data.data;
+}
+
+function wait(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+  

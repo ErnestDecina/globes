@@ -20,6 +20,9 @@ import {
     UPDATE_KNOWN_LARGE_VIDEO_RESOLUTION
 } from './actionTypes';
 
+import languageDetector from '../base/i18n/languageDetector.web';
+import logger from '../jaas/logger';
+
 /**
  * Action to select the participant to be displayed in LargeVideo based on the
  * participant id provided. If a participant id is not provided, the LargeVideo
@@ -48,6 +51,8 @@ export function selectParticipantInLargeVideo(participant?: string) {
         const remoteScreenShares = state['features/video-layout'].remoteScreenShares;
         let latestScreenshareParticipantId;
 
+        console.log("entered dispatch");
+
         if (remoteScreenShares?.length) {
             latestScreenshareParticipantId = remoteScreenShares[remoteScreenShares.length - 1];
         }
@@ -59,6 +64,7 @@ export function selectParticipantInLargeVideo(participant?: string) {
         // view mode). If the screenshare endpoint is not among the forwarded endpoints from the bridge,
         // it needs to be selected again at this point.
         if (participantId !== largeVideo.participantId || participantId === latestScreenshareParticipantId) {
+            console.log("Default dispatch");
             dispatch({
                 type: SELECT_LARGE_VIDEO_PARTICIPANT,
                 participantId
@@ -137,6 +143,30 @@ function _electLastVisibleRemoteParticipant(stateful: IStateful) {
  * @returns {(string|undefined)}
  */
 function _electParticipantInLargeVideo(state: IReduxState) {
+    const lang = languageDetector.detect();
+    const autoPinSetting = getAutoPinSetting();
+
+    // If language is in korean we dont set LargeVideo to be participant 
+    if(lang === "ko") {
+        if (autoPinSetting === true) {
+            const localScreenShareParticipant = getLocalScreenShareParticipant(state);
+
+            if (localScreenShareParticipant) {
+                return localScreenShareParticipant.id;
+            }
+        }
+
+        // Pick the most recent remote screenshare that was added to the conference.
+        const remoteScreenShares = state['features/video-layout'].remoteScreenShares;
+
+        if (remoteScreenShares?.length) {
+            return remoteScreenShares[remoteScreenShares.length - 1];
+        }
+
+        return undefined;
+    }
+    
+    
     // If a participant is pinned, they will be shown in the LargeVideo (regardless of whether they are local or
     // remote) when the filmstrip on stage is disabled.
     let participant = getPinnedParticipant(state);
@@ -145,7 +175,7 @@ function _electParticipantInLargeVideo(state: IReduxState) {
         return participant.id;
     }
 
-    const autoPinSetting = getAutoPinSetting();
+    
 
     if (autoPinSetting) {
         // when the setting auto_pin_latest_screen_share is true as spot does, prioritize local screenshare
@@ -171,6 +201,8 @@ function _electParticipantInLargeVideo(state: IReduxState) {
         // Return the screensharing participant id associated with this endpoint if multi-stream is enabled and
         // auto_pin_latest_screen_share setting is disabled.
         const screenshareParticipant = getVirtualScreenshareParticipantByOwnerId(state, participant.id);
+
+        
 
         return screenshareParticipant?.id ?? participant.id;
     }
