@@ -22,6 +22,7 @@ import { isWhiteboardEnabled } from '../../../../whiteboard/functions';
 import { setSeeWhatIsBeingShared } from '../../../../large-video/actions.web';
 import { getLargeVideoParticipant } from '../../../../large-video/functions';
 import ScreenSharePlaceholder from '../../../../large-video/components/ScreenSharePlaceholder.web';
+import ScreenSharePlaceholderWeb from '../../../../large-video/components/ScreenSharePlaceholder.web';
 
 // Hack to detect Spot.
 const SPOT_DISPLAY_NAME = 'Meeting Room';
@@ -167,6 +168,7 @@ class KoreanLargeVideo extends Component<IProps> {
             _largeVideoParticipantId,
             _hideSelfView,
             _localParticipantId } = this.props;
+            console.log("Component update")
 
         if (prevProps._visibleFilmstrip !== _visibleFilmstrip) {
             this._updateLayout();
@@ -199,7 +201,8 @@ class KoreanLargeVideo extends Component<IProps> {
             _isDisplayNameVisible,
             _noAutoPlayVideo,
             _showDominantSpeakerBadge,
-            _whiteboardEnabled
+            _whiteboardEnabled,
+            _isScreenSharing
         } = this.props;
         const className = `videocontainer${_isChatOpen ? ' shift-right' : ''}`;
 
@@ -221,8 +224,8 @@ class KoreanLargeVideo extends Component<IProps> {
                 
                     <div id = 'remotePresenceMessage' />
                     <span id = 'remoteConnectionMessage' />
-                    <div id = 'largeVideoElementsContainer'></div>
-                    <div                     
+                    <div id = 'largeVideoElementsContainer'>
+                        <div                     
                         style={{
                             width: '100%',
                             height: '100%'
@@ -246,7 +249,7 @@ class KoreanLargeVideo extends Component<IProps> {
                             <video
                                 autoPlay = { !_noAutoPlayVideo }
                                 id = 'largeVideo'
-                                muted = { false }
+                                muted = { true }
                                 playsInline = { true } /* for Safari on iOS to work */ 
                                 style={{
                                     width: '100%',
@@ -255,6 +258,8 @@ class KoreanLargeVideo extends Component<IProps> {
                                 />
                         </div>
                     </div>
+                    </div>
+                    
 
                     <div
                         id = 'dominantSpeaker'
@@ -387,7 +392,7 @@ function _mapStateToProps(state: IReduxState) {
         _backgroundAlpha: state['features/base/config'].backgroundAlpha,
         _customBackgroundColor: backgroundColor,
         _customBackgroundImageUrl: backgroundImageUrl,
-        _displayScreenSharingPlaceholder: Boolean(isLocalScreenshareOnLargeVideo && !seeWhatIsBeingShared && !isOnSpot),
+        _displayScreenSharingPlaceholder: Boolean(isLocalScreenshareOnLargeVideo && !seeWhatIsBeingShared),
         _hideSelfView: getHideSelfView(state),
         _isChatOpen: isChatOpen,
         _isDisplayNameVisible: isDisplayNameVisible(state),

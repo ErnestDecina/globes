@@ -24,8 +24,8 @@ import ParticipantsPane from "../../../../participants-pane/components/web/Parti
 import Prejoin from "../../../../prejoin/components/web/Prejoin";
 import { isPrejoinPageVisible } from "../../../../prejoin/functions";
 import ReactionAnimations from "../../../../reactions/components/web/ReactionsAnimations";
-import { toggleToolboxVisible } from "../../../../toolbox/actions.any";
-import { fullScreenChanged, showToolbox } from "../../../../toolbox/actions.web";
+import { handleToggleVideoMuted, toggleToolboxVisible } from "../../../../toolbox/actions.any";
+import { closeOverflowMenuIfOpen, fullScreenChanged, showToolbox } from "../../../../toolbox/actions.web";
 import JitsiPortal from "../../../../toolbox/components/web/JitsiPortal";
 import Toolbox from "../../../../toolbox/components/web/Toolbox";
 import { LAYOUT_CLASSNAMES } from "../../../../video-layout/constants";
@@ -42,15 +42,49 @@ import { default as Notice } from "../Notice";
 import ScreenSharePlaceholderWeb from "../../../../large-video/components/ScreenSharePlaceholder.web";
 import KoreanMainFilmstrip from "./KoreanMainFilmstrip";
 import KoreanWebCams from "./KoreanWebCams";
-import { X, Plus, Volume2, Volume1, Image, FileText, FileEdit, Inbox, MoreVertical, Mic, MicOff, Video, MessageSquare } from "lucide-react";
+import {
+    X,
+    Plus,
+    Volume2,
+    Volume1,
+    Image,
+    FileText,
+    FileEdit,
+    Inbox,
+    MoreVertical,
+    Mic,
+    MicOff,
+    Headphones,
+    HeadphoneOff,
+    Video,
+    MessageSquare,
+    Cast,
+    MonitorX,
+    NotebookPen,
+    Hand,
+    Captions,
+    MessageSquareOff,
+    VideoOff,
+} from "lucide-react";
 import { toggleChat } from "../../../../chat/actions.web";
-import { leaveConference } from '../../../../base/conference/actions.web';
+import { leaveConference } from "../../../../base/conference/actions.web";
 import KoreanChat from "./KoreanChat";
 import { openSettingsDialog } from "../../../../settings/actions.web";
 import { IGUMPendingState } from "../../../../base/media/types";
-import { isLocalTrackMuted } from "../../../../base/tracks/functions.web";
-import { MEDIA_TYPE } from "../../../../base/media/constants";
+import { getLocalDesktopTrack, isLocalTrackMuted } from "../../../../base/tracks/functions.web";
+import { MEDIA_TYPE, VIDEO_MUTISM_AUTHORITY } from "../../../../base/media/constants";
 import { muteLocal } from "../../../../video-menu/actions.web";
+import { toggleCamera } from "../../../../base/tracks/actions.any";
+import { setVideoMuted } from "../../../../base/media/actions";
+import { SET_VIDEO_MUTED } from "../../../../base/media/actionTypes";
+import { isScreenVideoShared } from "../../../../screen-share/functions";
+import { startScreenShareFlow } from "../../../../screen-share/actions.web";
+import { setSeeWhatIsBeingShared } from "../../../../large-video/actions.web";
+import { getLocalParticipant } from "../../../../base/participants/functions";
+import { getLargeVideoParticipant } from "../../../../large-video/functions";
+import { sendAnalytics } from "../../../../analytics/functions";
+import { createToolbarEvent } from "../../../../analytics/AnalyticsEvents";
+import { IParticipant } from "../../../../base/participants/types";
 
 const FULL_SCREEN_EVENTS = ["webkitfullscreenchange", "mozfullscreenchange", "fullscreenchange"];
 
@@ -112,6 +146,17 @@ interface IProps extends AbstractProps, WithTranslation {
 
     _audioMuted: boolean;
 
+    _videoMuted: boolean;
+
+    _isScreensharing: boolean;
+
+    _seeWhatIsBeingShared: boolean;
+
+    _localParticipantId: string | undefined;
+
+    _largeVideoParticipantId: string;
+
+    _localScreenShare: IParticipant | undefined;
     dispatch: IStore["dispatch"];
 }
 
@@ -128,7 +173,7 @@ function shouldShowPrejoin({ _showLobby, _showPrejoin, _showVisitorsQueue }: IPr
 /**
  * The conference page of the Web application.
  */
-class DefaultConference extends AbstractConference<IProps, any> {
+class KoreanConference extends AbstractConference<IProps, any> {
     _originalOnMouseMove: Function;
     _originalOnShowToolbar: Function;
 
@@ -159,7 +204,9 @@ class DefaultConference extends AbstractConference<IProps, any> {
         this._onChatButtonClick = this._onChatButtonClick.bind(this);
         this._onLeaveButtonClick = this._onLeaveButtonClick.bind(this);
         this._onSettingsButtonClick = this._onSettingsButtonClick.bind(this);
-        this._onMuteAudioButtonClick= this._onMuteAudioButtonClick.bind(this);
+        this._onMuteAudioButtonClick = this._onMuteAudioButtonClick.bind(this);
+        this._onWebcamButtonClick = this._onWebcamButtonClick.bind(this);
+        this._onScreenShareButtonClick = this._onScreenShareButtonClick.bind(this);
     }
 
     /**
@@ -179,6 +226,19 @@ class DefaultConference extends AbstractConference<IProps, any> {
      */
     componentDidMount() {
         this._start();
+    }
+
+    componentDidUpdate(prevProps: Readonly<IProps>, prevState: Readonly<any>, snapshot?: any): void {
+        const { _localScreenShare, _isScreensharing }= this.props;
+        
+        if(_localScreenShare && _isScreensharing) {
+            VideoLayout.updateLargeVideo(_localScreenShare?.id, true, true);
+        }
+        else {
+            VideoLayout.updateLargeVideo(undefined, true, true);
+
+        }
+        
     }
 
     render() {
@@ -212,7 +272,7 @@ class DefaultConference extends AbstractConference<IProps, any> {
                         display: "flex",
                         width: "100%",
                         height: "100%",
-                        backgroundColor: "white"
+                        backgroundColor: "white",
                     }}
                 >
                     <div
@@ -248,7 +308,7 @@ class DefaultConference extends AbstractConference<IProps, any> {
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                flexDirection: "row"
+                                flexDirection: "row",
                             }}
                         >
                             <div
@@ -258,13 +318,13 @@ class DefaultConference extends AbstractConference<IProps, any> {
                                     flexDirection: "row",
                                     alignItems: "center",
                                     padding: "8px",
-                                    backgroundColor: "#f3f4f6"
+                                    backgroundColor: "#f3f4f6",
                                 }}
                             >
                                 {/* 3-dot menu on the left */}
                                 <div
                                     style={{
-                                        flexShrink: 0
+                                        flexShrink: 0,
                                     }}
                                 >
                                     <button
@@ -278,7 +338,7 @@ class DefaultConference extends AbstractConference<IProps, any> {
                                             backgroundColor: "#d1d5db",
                                             color: "#374151",
                                             border: "none",
-                                            cursor: "pointer"
+                                            cursor: "pointer",
                                         }}
                                         onClick={this._onSettingsButtonClick}
                                     >
@@ -293,7 +353,7 @@ class DefaultConference extends AbstractConference<IProps, any> {
                                         display: "flex",
                                         flexDirection: "row",
                                         justifyContent: "center",
-                                        gap: "8px"
+                                        gap: "8px",
                                     }}
                                 >
                                     <button
@@ -307,13 +367,53 @@ class DefaultConference extends AbstractConference<IProps, any> {
                                             backgroundColor: "#ef4444",
                                             color: "white",
                                             border: "none",
-                                            cursor: "pointer"
+                                            cursor: "pointer",
                                         }}
                                         onClick={this._onLeaveButtonClick}
                                     >
                                         <X size={20} />
                                     </button>
-                                    {!this.props._audioMuted ? <button
+
+                                    {!this.props._audioMuted ? (
+                                        <button
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                width: "40px",
+                                                height: "40px",
+                                                borderRadius: "50%",
+                                                backgroundColor: "#2cfc03",
+                                                color: "white",
+                                                border: "none",
+                                                cursor: "pointer",
+                                            }}
+                                            onClick={this._onMuteAudioButtonClick}
+                                        >
+                                            <Mic size={20} />
+                                        </button>
+                                    ) : (
+                                        <button
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                width: "40px",
+                                                height: "40px",
+                                                borderRadius: "50%",
+                                                backgroundColor: "#ff0000",
+                                                color: "white",
+                                                border: "none",
+                                                cursor: "pointer",
+                                            }}
+                                            onClick={this._onMuteAudioButtonClick}
+                                        >
+                                            <MicOff size={20} />
+                                        </button>
+                                    )}
+
+                                    {/* Mute Audio */}
+                                    <button
                                         style={{
                                             display: "flex",
                                             alignItems: "center",
@@ -321,15 +421,57 @@ class DefaultConference extends AbstractConference<IProps, any> {
                                             width: "40px",
                                             height: "40px",
                                             borderRadius: "50%",
-                                            backgroundColor: "#22c55e",
+                                            backgroundColor: "#2cfc03",
                                             color: "white",
                                             border: "none",
-                                            cursor: "pointer"
+                                            cursor: "pointer",
                                         }}
-                                        onClick={this._onMuteAudioButtonClick}
-                                    >   
-                                        <Mic  size={20} />      
-                                    </button> : <button
+                                    >
+                                        <Headphones size={20} />
+                                    </button>
+
+                                    {/* Video Camera */}
+                                    { !this.props._videoMuted ? (
+                                        <button
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                width: "40px",
+                                                height: "40px",
+                                                borderRadius: "50%",
+                                                backgroundColor: "#2cfc03",
+                                                color: "white",
+                                                border: "none",
+                                                cursor: "pointer",
+                                            }}
+                                            onClick={this._onWebcamButtonClick}
+                                        >
+                                            <Video size={20} />
+                                        </button>
+                                    ) : (
+                                        <button
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                width: "40px",
+                                                height: "40px",
+                                                borderRadius: "50%",
+                                                backgroundColor: "#ff0000",
+                                                color: "white",
+                                                border: "none",
+                                                cursor: "pointer",
+                                            }}
+                                            onClick={this._onWebcamButtonClick}
+                                        >
+                                            <VideoOff size={20} />
+                                        </button>
+                                    )}
+
+                                    {/* ScreenShare */}
+
+                                    {!this.props._isScreensharing ?                                     <button
                                         style={{
                                             display: "flex",
                                             alignItems: "center",
@@ -337,19 +479,36 @@ class DefaultConference extends AbstractConference<IProps, any> {
                                             width: "40px",
                                             height: "40px",
                                             borderRadius: "50%",
-                                            backgroundColor: "red",
+                                            backgroundColor: "#0394fc",
                                             color: "white",
                                             border: "none",
-                                            cursor: "pointer"
+                                            cursor: "pointer",
                                         }}
-                                        onClick={this._onMuteAudioButtonClick}
-                                    >   
-                                        <MicOff  size={20} />      
+                                        onClick={this._onScreenShareButtonClick}
+                                    >
+                                        <Cast size={20} />
+
+                                    </button> :                                     <button
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "40px",
+                                            height: "40px",
+                                            borderRadius: "50%",
+                                            backgroundColor: "#ff0000",
+                                            color: "white",
+                                            border: "none",
+                                            cursor: "pointer",
+                                        }}
+                                        onClick={this._onScreenShareButtonClick}
+                                    >
+                                        
+                                        <MonitorX size={20} />
                                     </button>}
-                                    
 
-                                    
 
+                                    {/* AI Notes */}
                                     <button
                                         style={{
                                             display: "flex",
@@ -358,15 +517,16 @@ class DefaultConference extends AbstractConference<IProps, any> {
                                             width: "40px",
                                             height: "40px",
                                             borderRadius: "50%",
-                                            backgroundColor: "#3b82f6",
+                                            backgroundColor: "#2cfc03",
                                             color: "white",
                                             border: "none",
-                                            cursor: "pointer"
+                                            cursor: "pointer",
                                         }}
                                     >
-                                        <Volume2 size={20} />
+                                        <NotebookPen size={20} />
                                     </button>
 
+                                    {/* Handup */}
                                     <button
                                         style={{
                                             display: "flex",
@@ -375,15 +535,16 @@ class DefaultConference extends AbstractConference<IProps, any> {
                                             width: "40px",
                                             height: "40px",
                                             borderRadius: "50%",
-                                            backgroundColor: "#60a5fa",
+                                            backgroundColor: "#2cfc03",
                                             color: "white",
                                             border: "none",
-                                            cursor: "pointer"
+                                            cursor: "pointer",
                                         }}
                                     >
-                                        <Video size={20} />
+                                        <Hand size={20} />
                                     </button>
 
+                                    {/* SubTitles */}
                                     <button
                                         style={{
                                             display: "flex",
@@ -392,93 +553,60 @@ class DefaultConference extends AbstractConference<IProps, any> {
                                             width: "40px",
                                             height: "40px",
                                             borderRadius: "50%",
-                                            backgroundColor: "#6b7280",
+                                            backgroundColor: "#2cfc03",
                                             color: "white",
                                             border: "none",
-                                            cursor: "pointer"
+                                            cursor: "pointer",
                                         }}
                                     >
-                                        <Image size={20} />
-                                    </button>
-
-                                    <button
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            width: "40px",
-                                            height: "40px",
-                                            borderRadius: "50%",
-                                            backgroundColor: "#6b7280",
-                                            color: "white",
-                                            border: "none",
-                                            cursor: "pointer"
-                                        }}
-                                    >
-                                        <FileText size={20} />
-                                    </button>
-
-                                    <button
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            width: "40px",
-                                            height: "40px",
-                                            borderRadius: "50%",
-                                            backgroundColor: "#6b7280",
-                                            color: "white",
-                                            border: "none",
-                                            cursor: "pointer"
-                                        }}
-                                    >
-                                        <FileEdit size={20} />
-                                    </button>
-
-                                    <button
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            width: "40px",
-                                            height: "40px",
-                                            borderRadius: "50%",
-                                            backgroundColor: "#6b7280",
-                                            color: "white",
-                                            border: "none",
-                                            cursor: "pointer"
-                                        }}
-                                    >
-                                        <Inbox size={20} />
+                                        <Captions size={20} />
                                     </button>
                                 </div>
 
                                 {/* Help button on the right */}
                                 <div
                                     style={{
-                                        flexShrink: 0
+                                        flexShrink: 0,
                                     }}
                                 >
-                                    <button
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            width: "40px",
-                                            height: "40px",
-                                            borderRadius: "50%",
-                                            backgroundColor: "#d1d5db",
-                                            color: "#374151",
-                                            border: "none",
-                                            cursor: "pointer"
-                                        }}
-                                        onClick={this._onChatButtonClick}
-                                    >
-
-                                        <MessageSquare 
-                                        size={20}
-                                        ></MessageSquare>
-                                    </button>
+                                    {/* Chat button */}
+                                    {this.props._isChatOpen ? (
+                                        <button
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                width: "40px",
+                                                height: "40px",
+                                                borderRadius: "50%",
+                                                backgroundColor: "#d1d5db",
+                                                color: "#374151",
+                                                border: "none",
+                                                cursor: "pointer",
+                                            }}
+                                            onClick={this._onChatButtonClick}
+                                        >
+                                            <MessageSquareOff size={20} />
+                                        </button>
+                                    ) : (
+                                        <button
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                width: "40px",
+                                                height: "40px",
+                                                borderRadius: "50%",
+                                                backgroundColor: "#d1d5db",
+                                                color: "#374151",
+                                                border: "none",
+                                                cursor: "pointer",
+                                            }}
+                                            onClick={this._onChatButtonClick}
+                                        >
+                                            <MessageSquare size={20}></MessageSquare>
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -493,15 +621,17 @@ class DefaultConference extends AbstractConference<IProps, any> {
                             backgroundColor: "white",
                         }}
                     >
-                        {this.props._isChatOpen ? 
-                        (<div
-                            style={{
-                                height: "100%"
-                            }}>
-                            <KoreanChat  />
-                        </div>) : 
-                        (<KoreanWebCams/>)}
-                        
+                        {this.props._isChatOpen ? (
+                            <div
+                                style={{
+                                    height: "100%",
+                                }}
+                            >
+                                <KoreanChat />
+                            </div>
+                        ) : (
+                            <KoreanWebCams />
+                        )}
                     </div>
 
                     {shouldShowPrejoin(this.props) && <Prejoin />}
@@ -512,22 +642,18 @@ class DefaultConference extends AbstractConference<IProps, any> {
         );
     }
 
-
-    _onChatButtonClick(event: React.MouseEvent<HTMLDivElement>) {  
+    _onChatButtonClick(event: React.MouseEvent<HTMLDivElement>) {
         if (!event) {
             return;
         }
 
-        if(this.props._isChatOpen !== undefined) {
+        if (this.props._isChatOpen !== undefined) {
             const oldIsOpen = this.props._isChatOpen;
             const isOpen = oldIsOpen ? false : true;
             this.props.dispatch(toggleChat());
 
-
-
-            console.log(isOpen)
+            console.log(isOpen);
         }
-
     }
 
     _onLeaveButtonClick(event: React.MouseEvent<HTMLDivElement>) {
@@ -537,7 +663,7 @@ class DefaultConference extends AbstractConference<IProps, any> {
         this.props.dispatch(leaveConference());
     }
 
-    _onSettingsButtonClick(event: React.MouseEvent<HTMLDivElement>) { 
+    _onSettingsButtonClick(event: React.MouseEvent<HTMLDivElement>) {
         if (!event) {
             return;
         }
@@ -553,6 +679,59 @@ class DefaultConference extends AbstractConference<IProps, any> {
         this.props.dispatch(muteLocal(!this.props._audioMuted, MEDIA_TYPE.AUDIO));
     }
 
+    _onWebcamButtonClick(event: React.MouseEvent<HTMLDivElement>) {
+        if (!event) {
+            return;
+        }
+
+        console.log(`Video Muted: ${this.props._videoMuted}`);
+        if(!this.props._videoMuted) {
+            this.props.dispatch({
+                type: SET_VIDEO_MUTED,
+                authority: VIDEO_MUTISM_AUTHORITY.USER,
+                ensureTrack: true,
+                muted: true
+            });
+
+            typeof APP === 'undefined'
+            || APP.conference.muteVideo(true, true);
+        }
+
+        else {
+            this.props.dispatch({
+                        type: SET_VIDEO_MUTED,
+                        authority: VIDEO_MUTISM_AUTHORITY.USER,
+                        ensureTrack: true,
+                        muted: false
+                    });
+
+                    typeof APP === 'undefined'
+                    || APP.conference.muteVideo(false, true);
+        }
+
+    }
+
+    _onScreenShareButtonClick(event: React.MouseEvent<HTMLDivElement>) {
+        if (!event) {
+            return;
+        }
+
+        const { dispatch, _isScreensharing, _largeVideoParticipantId, _localScreenShare } = this.props;
+
+        sendAnalytics(createToolbarEvent(
+            'toggle.screen.sharing',
+            { enable: !_isScreensharing }));
+        
+        if(!_isScreensharing) {
+            dispatch(setSeeWhatIsBeingShared(true));
+            dispatch(closeOverflowMenuIfOpen());
+            dispatch(startScreenShareFlow(true));
+        }
+        else {
+            dispatch(setSeeWhatIsBeingShared(false));
+            dispatch(startScreenShareFlow(false));
+        }
+    } 
 
     /**
      * Sets custom background opacity based on config. It also applies the
@@ -664,9 +843,6 @@ class DefaultConference extends AbstractConference<IProps, any> {
         dispatch(init(!shouldShowPrejoin(this.props)));
 
         maybeShowSuboptimalExperienceNotification(dispatch, t);
-
-
-        
     }
 }
 
@@ -682,8 +858,14 @@ function _mapStateToProps(state: IReduxState) {
     const { backgroundAlpha, mouseMoveCallbackInterval } = state["features/base/config"];
     const { overflowDrawer } = state["features/toolbox"];
     const { isOpen } = state["features/chat"];
-    const { gumPending } = state['features/base/media'].audio;
-    const _audioMuted = isLocalTrackMuted(state['features/base/tracks'], MEDIA_TYPE.AUDIO);
+    const { gumPending } = state["features/base/media"].audio;
+    const _audioMuted = isLocalTrackMuted(state["features/base/tracks"], MEDIA_TYPE.AUDIO);
+    const tracks = state['features/base/tracks'];
+    const localParticipantId = getLocalParticipant(state)?.id;
+    const largeVideoParticipant = getLargeVideoParticipant(state);
+    const { seeWhatIsBeingShared } = state['features/large-video'];
+    const localDesktopTrack = getLocalDesktopTrack(tracks);
+    const { local, localScreenShare, remote } = state['features/base/participants'];
 
     return {
         ...abstractMapStateToProps(state),
@@ -698,10 +880,14 @@ function _mapStateToProps(state: IReduxState) {
         _showVisitorsQueue: showVisitorsQueue(state),
         _isChatOpen: isOpen,
         _gumPending: gumPending,
-        _audioMuted: _audioMuted
+        _audioMuted: _audioMuted,
+        _videoMuted: isLocalTrackMuted(tracks, MEDIA_TYPE.VIDEO),
+        _isScreensharing: isScreenVideoShared(state),
+        _localParticipantId: localParticipantId,
+        _largeVideoParticipantId: localDesktopTrack?.participantId,
+        _seeWhatIsBeingShared: Boolean(seeWhatIsBeingShared),
+        _localScreenShare: localScreenShare
     };
 }
 
-export default reactReduxConnect(_mapStateToProps)(translate(DefaultConference));
-
-
+export default reactReduxConnect(_mapStateToProps)(translate(KoreanConference));
