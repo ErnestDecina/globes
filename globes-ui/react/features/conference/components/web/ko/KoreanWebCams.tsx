@@ -7,6 +7,7 @@ import {
     getLocalVideoTrack,
     getTrackByMediaTypeAndParticipant,
     getVideoTrackByParticipant,
+    isLocalTrackMuted,
 } from "../../../../base/tracks/functions.web";
 import { MEDIA_TYPE } from "../../../../base/media/constants";
 import VideoTrack from "../../../../base/media/components/web/VideoTrack";
@@ -28,6 +29,8 @@ interface IProps {
 
     _localParticipant: IParticipant | undefined;
     _moderatorVideoStream: any;
+
+    _localVideoMuted: boolean;
 }
 
 export interface IState {
@@ -77,18 +80,17 @@ class KoreanWebCams extends Component<IProps, IState> {
         const isLocal = this.props._localParticipant?.local ?? true;
         const _videoTrack = getLocalVideoTrack(tracks);
 
-        // Mod & Local webcam        
+        // Mod & Local webcam
         const localJitsiVideoTrack = _videoTrack?.jitsiTrack;
         const videoTrackId = localJitsiVideoTrack?.getId();
 
         if (this.moderatorVideoRef.current && localJitsiVideoTrack) {
-            
             // Local is Mod
             if (this.props._localParticipant?.role === "moderator") {
                 console.log("Applying Local Mod camera");
                 localJitsiVideoTrack?.attach(this.moderatorVideoRef.current);
-                this.moderatorVideoRef.current.className ="";
-                this.moderatorVideoRef.current.id = "localVideo_container"
+                this.moderatorVideoRef.current.className = "";
+                this.moderatorVideoRef.current.id = "localVideo_container";
                 this.moderatorVideoRef.current.muted = true;
                 this.moderatorVideoRef.current.autoplay = true;
 
@@ -124,7 +126,6 @@ class KoreanWebCams extends Component<IProps, IState> {
                     }
                 });
 
-
                 // Only Local webcam
                 if (this.localVideoRef.current) {
                     console.log("Applying Local camera");
@@ -135,21 +136,26 @@ class KoreanWebCams extends Component<IProps, IState> {
             }
         }
 
-
-
         // Dominant Speaker Camera
-        if (this.domininatSpeaker1VideoRef.current && this.domininatSpeaker2VideoRef.current || this.domininatSpeaker3VideoRef.current) {
+        if (
+            (this.domininatSpeaker1VideoRef.current && this.domininatSpeaker2VideoRef.current) ||
+            this.domininatSpeaker3VideoRef.current
+        ) {
             console.log("Applying Entered Domininant speaker cameras");
-            
+
             const newDomininantSpeaker = getDominantSpeakerParticipant(this.props._state);
 
-            if (newDomininantSpeaker?.id !== this.props._localParticipant?.id && this.currentDominantSpeaker?.id !== this.props._localParticipant?.id && newDomininantSpeaker?.id !== this.currentDominantSpeaker?.id) {
+            if (
+                newDomininantSpeaker?.id !== this.props._localParticipant?.id &&
+                this.currentDominantSpeaker?.id !== this.props._localParticipant?.id &&
+                newDomininantSpeaker?.id !== this.currentDominantSpeaker?.id
+            ) {
                 this.previousDominantSpeaker = this.currentDominantSpeaker;
                 console.log(newDomininantSpeaker?.id);
                 console.log(this.currentDominantSpeaker?.id);
                 console.log(this.props._localParticipant?.id);
 
-                if(newDomininantSpeaker && this.previousDominantSpeaker) {
+                if (newDomininantSpeaker && this.previousDominantSpeaker) {
                     console.log("Applying Domininant speaker cameras");
                     if (this.previousDominantSpeaker?.id !== newDomininantSpeaker?.id) {
                         this.currentDominantSpeaker = newDomininantSpeaker;
@@ -157,16 +163,19 @@ class KoreanWebCams extends Component<IProps, IState> {
                         if (this.props._localParticipant?.role === "moderator") {
                             console.log("Applying Domininant speaker 1");
                             // Set New Domininant to domSpeaker 1
-                            const participant = getParticipantByIdOrUndefined(this.props._state, newDomininantSpeaker?.id);
-    
+                            const participant = getParticipantByIdOrUndefined(
+                                this.props._state,
+                                newDomininantSpeaker?.id
+                            );
+
                             const id = participant?.id ?? "";
                             const tracks = this.props._state["features/base/tracks"];
                             const _videoTrack = getVideoTrackByParticipant(this.props._state, participant);
                             const _audioTrack = getTrackByMediaTypeAndParticipant(tracks, MEDIA_TYPE.AUDIO, id);
-    
+
                             const jitsiVideoTrack = _videoTrack?.jitsiTrack;
                             const videoTrackId = jitsiVideoTrack?.getId();
-    
+
                             if (this.domininatSpeaker1VideoRef.current) {
                                 jitsiVideoTrack?.attach(this.domininatSpeaker1VideoRef.current);
                                 this.domininatSpeaker1VideoRef.current.className = "";
@@ -174,7 +183,7 @@ class KoreanWebCams extends Component<IProps, IState> {
                                 this.domininatSpeaker1VideoRef.current.muted = true;
                                 this.domininatSpeaker1VideoRef.current.autoplay = true;
                             }
-    
+
                             // Set Previous Domininant to domSpeaker 2
                             // Set New Domininant to domSpeaker 1
                             console.log("Applying Domininant speaker 2");
@@ -182,14 +191,14 @@ class KoreanWebCams extends Component<IProps, IState> {
                                 this.props._state,
                                 this.previousDominantSpeaker?.id
                             );
-    
+
                             const id2 = participant2?.id ?? "";
                             const _videoTrack2 = getVideoTrackByParticipant(this.props._state, participant2);
                             const _audioTrack2 = getTrackByMediaTypeAndParticipant(tracks, MEDIA_TYPE.AUDIO, id2);
-    
+
                             const jitsiVideoTrack2 = _videoTrack2?.jitsiTrack;
                             const videoTrackId2 = jitsiVideoTrack2?.getId();
-    
+
                             if (this.domininatSpeaker2VideoRef.current) {
                                 jitsiVideoTrack2?.attach(this.domininatSpeaker2VideoRef.current);
                                 this.domininatSpeaker2VideoRef.current.className = "";
@@ -202,16 +211,19 @@ class KoreanWebCams extends Component<IProps, IState> {
                         else {
                             // Set New Domininant to domSpeaker 3
                             console.log("Applying Domininant speaker 3");
-                            const participant = getParticipantByIdOrUndefined(this.props._state, this.currentDominantSpeaker?.id);
-    
+                            const participant = getParticipantByIdOrUndefined(
+                                this.props._state,
+                                this.currentDominantSpeaker?.id
+                            );
+
                             const id = participant?.id ?? "";
                             const tracks = this.props._state["features/base/tracks"];
                             const _videoTrack = getVideoTrackByParticipant(this.props._state, participant);
                             const _audioTrack = getTrackByMediaTypeAndParticipant(tracks, MEDIA_TYPE.AUDIO, id);
-    
+
                             const jitsiVideoTrack = _videoTrack?.jitsiTrack;
                             const videoTrackId = jitsiVideoTrack?.getId();
-    
+
                             if (this.domininatSpeaker3VideoRef.current) {
                                 jitsiVideoTrack?.attach(this.domininatSpeaker3VideoRef.current);
                                 this.domininatSpeaker3VideoRef.current.className = "";
@@ -222,7 +234,7 @@ class KoreanWebCams extends Component<IProps, IState> {
                         }
                     }
                 }
-            }          
+            }
         }
     }
 
@@ -238,13 +250,21 @@ class KoreanWebCams extends Component<IProps, IState> {
                     >
                         주최자
                     </label>
-                    <video
-                        ref={this.moderatorVideoRef}
+                    {!this.props._localVideoMuted ? (
+                        <video
+                            ref={this.moderatorVideoRef}
+                            style={{
+                                width: "100%",
+                                height: "auto",
+                            }}
+                        ></video>
+                    ) : (
+                        <img src="https://cdn-icons-png.flaticon.com/512/482/482432.png"
                         style={{
                             width: "100%",
                             height: "auto",
-                        }}
-                    ></video>
+                        }}></img>
+                    )}
                 </div>
 
                 {/* Domininat Speaker 1 WebCam */}
@@ -316,13 +336,21 @@ class KoreanWebCams extends Component<IProps, IState> {
                     >
                         당신
                     </label>
-                    <video
-                        ref={this.localVideoRef}
+                    {!this.props._localVideoMuted ? (
+                        <video
+                            ref={this.localVideoRef}
+                            style={{
+                                width: "100%",
+                                height: "auto",
+                            }}
+                        ></video>
+                    ) : (
+                        <img src="https://cdn-icons-png.flaticon.com/512/482/482432.png"
                         style={{
                             width: "100%",
                             height: "auto",
-                        }}
-                    ></video>
+                        }}></img>
+                    )}
                 </div>
 
                 {/* Domininat Speaker 3 WebCam */}
@@ -355,14 +383,15 @@ class KoreanWebCams extends Component<IProps, IState> {
 function _mapStateToProps(state: IReduxState, _ownProps: any) {
     const { remoteParticipants } = state["features/filmstrip"];
     const localParticipant = getParticipantByIdOrUndefined(state, undefined);
-
+    const tracks = state["features/base/tracks"];
 
     this.currentDominantSpeaker = localParticipant;
 
     return {
         _remoteParticipants: remoteParticipants,
         _state: state,
-        _localParticipant: localParticipant
+        _localParticipant: localParticipant,
+        _localVideoMuted: isLocalTrackMuted(tracks, MEDIA_TYPE.VIDEO),
     };
 }
 
