@@ -80,11 +80,12 @@ import { SET_VIDEO_MUTED } from "../../../../base/media/actionTypes";
 import { isScreenVideoShared } from "../../../../screen-share/functions";
 import { startScreenShareFlow } from "../../../../screen-share/actions.web";
 import { setSeeWhatIsBeingShared } from "../../../../large-video/actions.web";
-import { getLocalParticipant } from "../../../../base/participants/functions";
+import { getLocalParticipant, hasRaisedHand } from "../../../../base/participants/functions";
 import { getLargeVideoParticipant } from "../../../../large-video/functions";
 import { sendAnalytics } from "../../../../analytics/functions";
 import { createToolbarEvent } from "../../../../analytics/AnalyticsEvents";
 import { IParticipant } from "../../../../base/participants/types";
+import { raiseHand } from "../../../../base/participants/actions";
 
 const FULL_SCREEN_EVENTS = ["webkitfullscreenchange", "mozfullscreenchange", "fullscreenchange"];
 
@@ -157,6 +158,8 @@ interface IProps extends AbstractProps, WithTranslation {
     _largeVideoParticipantId: string;
 
     _localScreenShare: IParticipant | undefined;
+
+    _raiseHand: boolean;
     dispatch: IStore["dispatch"];
 }
 
@@ -207,6 +210,7 @@ class KoreanConference extends AbstractConference<IProps, any> {
         this._onMuteAudioButtonClick = this._onMuteAudioButtonClick.bind(this);
         this._onWebcamButtonClick = this._onWebcamButtonClick.bind(this);
         this._onScreenShareButtonClick = this._onScreenShareButtonClick.bind(this);
+        this._onRaiseHandButtonClick = this._onRaiseHandButtonClick.bind(this);
     }
 
     /**
@@ -229,16 +233,13 @@ class KoreanConference extends AbstractConference<IProps, any> {
     }
 
     componentDidUpdate(prevProps: Readonly<IProps>, prevState: Readonly<any>, snapshot?: any): void {
-        const { _localScreenShare, _isScreensharing }= this.props;
-        
-        if(_localScreenShare && _isScreensharing) {
-            VideoLayout.updateLargeVideo(_localScreenShare?.id, true, true);
-        }
-        else {
-            VideoLayout.updateLargeVideo(undefined, true, true);
+        const { _localScreenShare, _isScreensharing } = this.props;
 
+        if (_localScreenShare && _isScreensharing) {
+            VideoLayout.updateLargeVideo(_localScreenShare?.id, true, true);
+        } else {
+            VideoLayout.updateLargeVideo(undefined, true, true);
         }
-        
     }
 
     render() {
@@ -267,6 +268,7 @@ class KoreanConference extends AbstractConference<IProps, any> {
                     flexDirection: "column",
                 }}
             >
+                <Notice />
                 <div
                     style={{
                         display: "flex",
@@ -413,7 +415,7 @@ class KoreanConference extends AbstractConference<IProps, any> {
                                     )}
 
                                     {/* Mute Audio */}
-                                    <button
+                                    {/* <button
                                         style={{
                                             display: "flex",
                                             alignItems: "center",
@@ -428,10 +430,10 @@ class KoreanConference extends AbstractConference<IProps, any> {
                                         }}
                                     >
                                         <Headphones size={20} />
-                                    </button>
+                                    </button> */}
 
                                     {/* Video Camera */}
-                                    { !this.props._videoMuted ? (
+                                    {!this.props._videoMuted ? (
                                         <button
                                             style={{
                                                 display: "flex",
@@ -471,7 +473,85 @@ class KoreanConference extends AbstractConference<IProps, any> {
 
                                     {/* ScreenShare */}
 
-                                    {!this.props._isScreensharing ?                                     <button
+                                    {!this.props._isScreensharing ? (
+                                        <button
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                width: "40px",
+                                                height: "40px",
+                                                borderRadius: "50%",
+                                                backgroundColor: "#0394fc",
+                                                color: "white",
+                                                border: "none",
+                                                cursor: "pointer",
+                                            }}
+                                            onClick={this._onScreenShareButtonClick}
+                                        >
+                                            <Cast size={20} />
+                                        </button>
+                                    ) : (
+                                        <button
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                width: "40px",
+                                                height: "40px",
+                                                borderRadius: "50%",
+                                                backgroundColor: "#ff0000",
+                                                color: "white",
+                                                border: "none",
+                                                cursor: "pointer",
+                                            }}
+                                            onClick={this._onScreenShareButtonClick}
+                                        >
+                                            <MonitorX size={20} />
+                                        </button>
+                                    )}
+
+                                    {/* Handup */}
+                                    {!this.props._raiseHand ? (
+                                        <button
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                width: "40px",
+                                                height: "40px",
+                                                borderRadius: "50%",
+                                                backgroundColor: "#0394fc",
+                                                color: "white",
+                                                border: "none",
+                                                cursor: "pointer",
+                                            }}
+                                            onClick={this._onRaiseHandButtonClick}
+                                        >
+                                            <Hand size={20} />
+                                        </button>
+                                    ) : (
+                                        <button
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                width: "40px",
+                                                height: "40px",
+                                                borderRadius: "50%",
+                                                backgroundColor: "#ff0000",
+                                                color: "white",
+                                                border: "none",
+                                                cursor: "pointer",
+                                            }}
+                                            onClick={this._onRaiseHandButtonClick}
+                                        >
+                                            <Hand size={20} />
+                                        </button>
+                                    )}
+
+                                    {/* AI Notes */}
+                                    <button
                                         style={{
                                             display: "flex",
                                             alignItems: "center",
@@ -484,64 +564,8 @@ class KoreanConference extends AbstractConference<IProps, any> {
                                             border: "none",
                                             cursor: "pointer",
                                         }}
-                                        onClick={this._onScreenShareButtonClick}
-                                    >
-                                        <Cast size={20} />
-
-                                    </button> :                                     <button
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            width: "40px",
-                                            height: "40px",
-                                            borderRadius: "50%",
-                                            backgroundColor: "#ff0000",
-                                            color: "white",
-                                            border: "none",
-                                            cursor: "pointer",
-                                        }}
-                                        onClick={this._onScreenShareButtonClick}
-                                    >
-                                        
-                                        <MonitorX size={20} />
-                                    </button>}
-
-
-                                    {/* AI Notes */}
-                                    <button
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            width: "40px",
-                                            height: "40px",
-                                            borderRadius: "50%",
-                                            backgroundColor: "#2cfc03",
-                                            color: "white",
-                                            border: "none",
-                                            cursor: "pointer",
-                                        }}
                                     >
                                         <NotebookPen size={20} />
-                                    </button>
-
-                                    {/* Handup */}
-                                    <button
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            width: "40px",
-                                            height: "40px",
-                                            borderRadius: "50%",
-                                            backgroundColor: "#2cfc03",
-                                            color: "white",
-                                            border: "none",
-                                            cursor: "pointer",
-                                        }}
-                                    >
-                                        <Hand size={20} />
                                     </button>
 
                                     {/* SubTitles */}
@@ -553,7 +577,7 @@ class KoreanConference extends AbstractConference<IProps, any> {
                                             width: "40px",
                                             height: "40px",
                                             borderRadius: "50%",
-                                            backgroundColor: "#2cfc03",
+                                            backgroundColor: "#0394fc",
                                             color: "white",
                                             border: "none",
                                             cursor: "pointer",
@@ -638,6 +662,7 @@ class KoreanConference extends AbstractConference<IProps, any> {
                     {_showLobby && !_showVisitorsQueue && <LobbyScreen />}
                     {_showVisitorsQueue && <VisitorsQueue />}
                 </div>
+                <ReactionAnimations />
             </div>
         );
     }
@@ -685,30 +710,25 @@ class KoreanConference extends AbstractConference<IProps, any> {
         }
 
         console.log(`Video Muted: ${this.props._videoMuted}`);
-        if(!this.props._videoMuted) {
+        if (!this.props._videoMuted) {
             this.props.dispatch({
                 type: SET_VIDEO_MUTED,
                 authority: VIDEO_MUTISM_AUTHORITY.USER,
                 ensureTrack: true,
-                muted: true
+                muted: true,
             });
 
-            typeof APP === 'undefined'
-            || APP.conference.muteVideo(true, true);
-        }
-
-        else {
+            typeof APP === "undefined" || APP.conference.muteVideo(true, true);
+        } else {
             this.props.dispatch({
-                        type: SET_VIDEO_MUTED,
-                        authority: VIDEO_MUTISM_AUTHORITY.USER,
-                        ensureTrack: true,
-                        muted: false
-                    });
+                type: SET_VIDEO_MUTED,
+                authority: VIDEO_MUTISM_AUTHORITY.USER,
+                ensureTrack: true,
+                muted: false,
+            });
 
-                    typeof APP === 'undefined'
-                    || APP.conference.muteVideo(false, true);
+            typeof APP === "undefined" || APP.conference.muteVideo(false, true);
         }
-
     }
 
     _onScreenShareButtonClick(event: React.MouseEvent<HTMLDivElement>) {
@@ -718,20 +738,27 @@ class KoreanConference extends AbstractConference<IProps, any> {
 
         const { dispatch, _isScreensharing, _largeVideoParticipantId, _localScreenShare } = this.props;
 
-        sendAnalytics(createToolbarEvent(
-            'toggle.screen.sharing',
-            { enable: !_isScreensharing }));
-        
-        if(!_isScreensharing) {
+        sendAnalytics(createToolbarEvent("toggle.screen.sharing", { enable: !_isScreensharing }));
+
+        if (!_isScreensharing) {
             dispatch(setSeeWhatIsBeingShared(true));
             dispatch(closeOverflowMenuIfOpen());
             dispatch(startScreenShareFlow(true));
-        }
-        else {
+        } else {
             dispatch(setSeeWhatIsBeingShared(false));
             dispatch(startScreenShareFlow(false));
         }
-    } 
+    }
+
+    _onRaiseHandButtonClick(event: React.MouseEvent<HTMLDivElement>) {
+        if (!event) {
+            return;
+        }
+
+        const { dispatch, _raiseHand } = this.props;
+
+        dispatch(raiseHand(!_raiseHand));
+    }
 
     /**
      * Sets custom background opacity based on config. It also applies the
@@ -860,12 +887,13 @@ function _mapStateToProps(state: IReduxState) {
     const { isOpen } = state["features/chat"];
     const { gumPending } = state["features/base/media"].audio;
     const _audioMuted = isLocalTrackMuted(state["features/base/tracks"], MEDIA_TYPE.AUDIO);
-    const tracks = state['features/base/tracks'];
+    const tracks = state["features/base/tracks"];
     const localParticipantId = getLocalParticipant(state)?.id;
     const largeVideoParticipant = getLargeVideoParticipant(state);
-    const { seeWhatIsBeingShared } = state['features/large-video'];
+    const { seeWhatIsBeingShared } = state["features/large-video"];
     const localDesktopTrack = getLocalDesktopTrack(tracks);
-    const { local, localScreenShare, remote } = state['features/base/participants'];
+    const { local, localScreenShare, remote } = state["features/base/participants"];
+    const localParticipant = getLocalParticipant(state);
 
     return {
         ...abstractMapStateToProps(state),
@@ -886,7 +914,8 @@ function _mapStateToProps(state: IReduxState) {
         _localParticipantId: localParticipantId,
         _largeVideoParticipantId: localDesktopTrack?.participantId,
         _seeWhatIsBeingShared: Boolean(seeWhatIsBeingShared),
-        _localScreenShare: localScreenShare
+        _localScreenShare: localScreenShare,
+        _raiseHand: hasRaisedHand(localParticipant),
     };
 }
 
