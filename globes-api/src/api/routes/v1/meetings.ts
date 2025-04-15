@@ -1,6 +1,6 @@
 import { Router } from "express";
 import MeetingsController from "../../controllers/MeetingsContontroller";
-import { uploadSlides } from "../../../utils/multer";
+import { convertSlidesToImages, uploadSlides } from "../../../utils/multer";
 
 const meetings_router: Router = Router();
 
@@ -26,7 +26,7 @@ meetings_router
 
 meetings_router
     .route('/:meeting_uuid/slides')
-    .post(uploadSlides, MeetingsController.handleFileUploadResponse);
+    .post(uploadSlides, convertSlidesToImages, MeetingsController.handleFileUploadResponse);
 
 
 
