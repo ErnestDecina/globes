@@ -7,6 +7,7 @@ import { is_development } from './config/application.config';
 import { api_version } from './config/express.config';
 import express_router from './api/routes/v1';
 import Logger from './utils/logger';
+import path from 'path';
 
 
 export function createExpressServer(): Application {
@@ -20,6 +21,7 @@ export function createExpressServer(): Application {
     express_app.use(express.urlencoded({extended: false}));
     express_app.use(express.json());
     express_app.use(cors(cors_option));
+    express_app.use('/static', express.static('/workspace/globes-api/uploads'));
 
 
     // Routes
