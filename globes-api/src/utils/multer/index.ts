@@ -163,6 +163,7 @@ async function convertPdfToImages(pdfPath: string, imagesDir: string, req: Expre
     const pdfBytes = fs.readFileSync(pdfPath);
     const pdfDoc = await PDFDocument.load(pdfBytes);
     const pageCount = pdfDoc.getPageCount();
+    req.count = pageCount;
     
     // For each page in the PDF
     for (let i = 0; i < pageCount; i++) {

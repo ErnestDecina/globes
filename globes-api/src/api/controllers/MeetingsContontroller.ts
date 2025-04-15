@@ -2,6 +2,8 @@ import { NextFunction, Request, Response } from "express";
 import { MeetingInput, MeetingOutput } from "../model/Meetings";
 import MeetingsService from "../services/MeetingsService";
 import { MessageInput } from "../model/Messages";
+import path from "path";
+import fs from 'fs';
 
 class MeetingsController {
   async getMeetings(
@@ -114,17 +116,12 @@ class MeetingsController {
     if (!req.file) {
       res.status(400).json({ error: "No file provided" });
     }
-
-    // Example response
+    
+    // Return the count of files in the response
     res.status(200).json({
       message: "Slides uploaded successfully",
       meeting_uuid: meeting_uuid,
-      file: {
-        filename: req.file.filename,
-        originalName: req.file.originalname,
-        path: req.file.path,
-        size: req.file.size,
-      },
+      count: req.count
     });
   }
 }

@@ -86,7 +86,11 @@ import { sendAnalytics } from "../../../../analytics/functions";
 import { createToolbarEvent } from "../../../../analytics/AnalyticsEvents";
 import { IParticipant } from "../../../../base/participants/types";
 import { raiseHand } from "../../../../base/participants/actions";
-import { UPDATE_SCREENSHARE_POPUP_STATE } from "../../../actionTypes";
+import {
+    START_POWERPOINT_SLIDES_AS_PRESENTER,
+    STOP_POWERPOINT_SLIDES_AS_PRESENTER,
+    UPDATE_SCREENSHARE_POPUP_STATE,
+} from "../../../actionTypes";
 import ScreenSharePopup from "./ScreenSharePopup";
 import languageDetector from "../../../../base/i18n/languageDetector.web";
 import axios from "axios";
@@ -166,6 +170,8 @@ interface IProps extends AbstractProps, WithTranslation {
     _raiseHand: boolean;
 
     _isScreenSharePopupOpen: boolean;
+
+    _isPDFScreenShare: boolean;
 
     _locationURL: URL;
     dispatch: IStore["dispatch"];
@@ -489,25 +495,7 @@ class KoreanConference extends AbstractConference<IProps, any> {
 
                                     {/* ScreenShare */}
 
-                                    {!this.props._isScreensharing ? (
-                                        <button
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                width: "40px",
-                                                height: "40px",
-                                                borderRadius: "50%",
-                                                backgroundColor: "#0394fc",
-                                                color: "white",
-                                                border: "none",
-                                                cursor: "pointer",
-                                            }}
-                                            onClick={this._onScreenShareButtonClick}
-                                        >
-                                            <Cast size={20} />
-                                        </button>
-                                    ) : (
+                                    {this.props._isScreensharing || this.props._isPDFScreenShare ? (
                                         <button
                                             style={{
                                                 display: "flex",
@@ -524,6 +512,24 @@ class KoreanConference extends AbstractConference<IProps, any> {
                                             onClick={this._onScreenShareButtonClick}
                                         >
                                             <MonitorX size={20} />
+                                        </button>
+                                    ) : (
+                                        <button
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                width: "40px",
+                                                height: "40px",
+                                                borderRadius: "50%",
+                                                backgroundColor: "#0394fc",
+                                                color: "white",
+                                                border: "none",
+                                                cursor: "pointer",
+                                            }}
+                                            onClick={this._onScreenShareButtonClick}
+                                        >
+                                            <Cast size={20} />
                                         </button>
                                     )}
 
@@ -752,7 +758,16 @@ class KoreanConference extends AbstractConference<IProps, any> {
             return;
         }
 
+        const { dispatch } = this.props;
+
+        console.log(`ScreenShare: ${this.props._isScreensharing}, PDF Share: ${this.props._isPDFScreenShare}`);
+
         // If already screen sharing, just toggle it off
+        if (this.props._isPDFScreenShare) {
+            dispatch({ type: STOP_POWERPOINT_SLIDES_AS_PRESENTER });
+            return;
+        }
+
         if (this.props._isScreensharing) {
             this._handleScreenShare();
             return;
@@ -763,7 +778,7 @@ class KoreanConference extends AbstractConference<IProps, any> {
     }
 
     _toggleScreenSharePopup() {
-        const { dispatch, _isScreenSharePopupOpen } = this.props;
+        const { dispatch, _isScreenSharePopupOpen, _isPDFScreenShare } = this.props;
 
         if (_isScreenSharePopupOpen) {
             dispatch({
@@ -793,8 +808,10 @@ class KoreanConference extends AbstractConference<IProps, any> {
         }
     }
 
-    _handleFileSubmit(files: { file1: File | null; file2: File | null }) {
-        const url = this.props._locationURL.pathname.slice(1);
+    async _handleFileSubmit(files: { file1: File | null; file2: File | null }) {
+        const { dispatch, _locationURL } = this.props;
+
+        const url = _locationURL.pathname.slice(1);
 
         if (files.file1) {
             const formData = new FormData();
@@ -816,11 +833,26 @@ class KoreanConference extends AbstractConference<IProps, any> {
             formData.append("slides", files.file2);
 
             try {
-                axios.post(`http://localhost:3000/api/v1/meetings/${url}/slides?lang=ko`, formData, {
-                    headers: {
-                        "Content-Type": "multipart/form-data",
-                    },
+                const response = await axios.post(
+                    `http://localhost:3000/api/v1/meetings/${url}/slides?lang=ko`,
+                    formData,
+                    {
+                        headers: {
+                            "Content-Type": "multipart/form-data",
+                        },
+                    }
+                );
+
+                const data = response.data;
+
+                console.log(data);
+                dispatch({
+                    type: START_POWERPOINT_SLIDES_AS_PRESENTER,
+                    count: data.count,
                 });
+
+                // ALSO NOTIFY OTHER USERS
+                // count: data.count
             } catch (error) {
                 console.error(error);
             }
@@ -971,7 +1003,7 @@ function _mapStateToProps(state: IReduxState) {
     const localDesktopTrack = getLocalDesktopTrack(tracks);
     const { local, localScreenShare, remote } = state["features/base/participants"];
     const localParticipant = getLocalParticipant(state);
-    const { isScreenSharePopupOpen } = state["features/conference"];
+    const { isScreenSharePopupOpen, isPDFScreenShare } = state["features/conference"];
 
     const { locationURL = { href: "" } as URL } = state["features/base/connection"];
 
@@ -998,6 +1030,7 @@ function _mapStateToProps(state: IReduxState) {
         _raiseHand: hasRaisedHand(localParticipant),
         _isScreenSharePopupOpen: isScreenSharePopupOpen,
         _locationURL: locationURL,
+        _isPDFScreenShare: isPDFScreenShare,
     };
 }
 

@@ -4,7 +4,7 @@ import { openDialog } from '../base/dialog/actions';
 import { getJitsiMeetGlobalNSConnectionTimes } from '../base/util/helpers';
 import { getBackendSafeRoomName } from '../base/util/uri';
 
-import { DISMISS_CALENDAR_NOTIFICATION } from './actionTypes';
+import { DISMISS_CALENDAR_NOTIFICATION, NEXT_IMAGE, PREVIOUS_IMAGE, SET_LANGUAGE, TOGGLE_DROPDOWN } from './actionTypes';
 import LeaveReasonDialog from './components/web/LeaveReasonDialog.web';
 import logger from './logger';
 
@@ -89,3 +89,21 @@ export function init(shouldDispatchConnect: boolean) {
             }));
     };
 }
+
+
+export const nextImage = () => ({
+    type: NEXT_IMAGE
+  });
+  
+  export const previousImage = () => ({
+    type: PREVIOUS_IMAGE
+  });
+  
+  export const setLanguage = (language) => ({
+    type: SET_LANGUAGE,
+    payload: language
+  });
+  
+  export const toggleDropdown = () => ({
+    type: TOGGLE_DROPDOWN
+  });
