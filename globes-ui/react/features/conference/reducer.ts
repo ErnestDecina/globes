@@ -26,12 +26,19 @@ ReducerRegistry.register<IKoreanConferenceState>('features/conference', (state =
     switch (action.type) {
     case START_POWERPOINT_SLIDES: {
       console.log(`WWWW: ${action.count}`);
+
+      if(!state.isLocalPDFScreenSharePresenter) {
         return {
-            ...state,
-            isLocalPDFScreenSharePresenter: false,
-            isPDFScreenShare: true,
-            pdfScreenShareCount: action.count
-        }
+          ...state,
+          isLocalPDFScreenSharePresenter: false,
+          isPDFScreenShare: true,
+          pdfScreenShareCount: action.count
+      }
+      }
+
+      return {
+        ...state
+      }
     }
 
     case START_POWERPOINT_SLIDES_AS_PRESENTER: {
