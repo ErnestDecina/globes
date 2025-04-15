@@ -1,6 +1,6 @@
 import API from "../../../modules/API";
 import ReducerRegistry from "../base/redux/ReducerRegistry";
-import { NEXT_IMAGE, PREVIOUS_IMAGE, SET_IMAGE_INDEX, SET_LANGUAGE, START_POWERPOINT_SLIDES, START_POWERPOINT_SLIDES_AS_PRESENTER, STOP_POWERPOINT_SLIDES_AS_PRESENTER, TOGGLE_DROPDOWN, UPDATE_SCREENSHARE_POPUP_STATE } from "./actionTypes";
+import { NEXT_IMAGE, PREVIOUS_IMAGE, SET_IMAGE_INDEX, SET_LANGUAGE, START_POWERPOINT_SLIDES, START_POWERPOINT_SLIDES_AS_PRESENTER, STOP_POWERPOINT_SLIDES_AS_PRESENTER, TOGGLE_DROPDOWN, UPDATE_AI_NOTES_CONTENT, UPDATE_AI_NOTES_WINDOW_REF, UPDATE_MEETING_REAL_NAME, UPDATE_SCREENSHARE_POPUP_STATE } from "./actionTypes";
 
 const DEFAULT_STATE = {
     isScreenSharePopupOpen: false,
@@ -9,7 +9,10 @@ const DEFAULT_STATE = {
     pdfScreenShareCount: 0,
     currentIndex: 1,
     languageSelection: 'ko',
-    showDropdown: false
+    showDropdown: false,
+    aiNotesContent: '',
+    aiNotesWindowRef: null,
+    meetingRealName: ''
 };
 
 export interface IKoreanConferenceState {
@@ -20,10 +23,21 @@ export interface IKoreanConferenceState {
     currentIndex: number;
     languageSelection: string;
     showDropdown: boolean;
+    aiNotesContent: string;
+    aiNotesWindowRef: Window | null;
+    meetingRealName: string;
+
 }
 
 ReducerRegistry.register<IKoreanConferenceState>('features/conference', (state = DEFAULT_STATE, action): IKoreanConferenceState => {
     switch (action.type) {
+    case UPDATE_MEETING_REAL_NAME: {
+      return {
+        ...state,
+        meetingRealName: action.meetingRealName
+      }
+    }
+
     case START_POWERPOINT_SLIDES: {
       console.log(`WWWW: ${action.count}`);
 
@@ -103,7 +117,25 @@ ReducerRegistry.register<IKoreanConferenceState>('features/conference', (state =
         ...state,
         showDropdown: !state.showDropdown
       };
+
+
+
+      case UPDATE_AI_NOTES_CONTENT:
+        return {
+            ...state,
+            aiNotesContent: action.aiNotesContent
+        };
+        
+    case UPDATE_AI_NOTES_WINDOW_REF:
+        return {
+            ...state,
+            aiNotesWindowRef: action.windowRef
+        };
     }
+
+
+    
+
     return state;
 
     

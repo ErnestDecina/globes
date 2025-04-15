@@ -25,6 +25,10 @@ meetings_router
     .get(MeetingsController.getTranslations);
 
 meetings_router
+    .route('/:meeting_uuid/summarize')
+    .get(MeetingsController.getSummary);
+
+meetings_router
     .route('/:meeting_uuid/slides')
     .post(uploadSlides, convertSlidesToImages, MeetingsController.handleFileUploadResponse);
 

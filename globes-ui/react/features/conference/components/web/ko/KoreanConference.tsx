@@ -89,6 +89,8 @@ import { raiseHand } from "../../../../base/participants/actions";
 import {
     START_POWERPOINT_SLIDES_AS_PRESENTER,
     STOP_POWERPOINT_SLIDES_AS_PRESENTER,
+    UPDATE_AI_NOTES_CONTENT,
+    UPDATE_AI_NOTES_WINDOW_REF,
     UPDATE_SCREENSHARE_POPUP_STATE,
 } from "../../../actionTypes";
 import ScreenSharePopup from "./ScreenSharePopup";
@@ -174,7 +176,12 @@ interface IProps extends AbstractProps, WithTranslation {
 
     _isPDFScreenShare: boolean;
 
+    _aiNotesContent: string;
+    _aiNotesWindowRef: Window | null;
+
     _locationURL: URL;
+
+    _meetingRealName: string;
     dispatch: IStore["dispatch"];
 }
 
@@ -229,6 +236,9 @@ class KoreanConference extends AbstractConference<IProps, any> {
         this._toggleScreenSharePopup = this._toggleScreenSharePopup.bind(this);
         this._handleScreenShare = this._handleScreenShare.bind(this);
         this._handleFileSubmit = this._handleFileSubmit.bind(this);
+        this._openAINotesWindow = this._openAINotesWindow.bind(this);
+        this._handleAINotesWindowMessage = this._handleAINotesWindowMessage.bind(this);
+        this._onAINotesButtonClick = this._onAINotesButtonClick.bind(this); 
     }
 
     /**
@@ -587,6 +597,7 @@ class KoreanConference extends AbstractConference<IProps, any> {
                                             border: "none",
                                             cursor: "pointer",
                                         }}
+                                        onClick={this._onAINotesButtonClick}
                                     >
                                         <NotebookPen size={20} />
                                     </button>
@@ -869,6 +880,104 @@ class KoreanConference extends AbstractConference<IProps, any> {
         dispatch(raiseHand(!_raiseHand));
     }
 
+
+    _openAINotesWindow() {
+        const { dispatch, _aiNotesContent, _aiNotesWindowRef, _meetingRealName, _locationURL } = this.props;
+        const url = _locationURL.pathname.slice(1);
+        // Check if window is already open
+        if (_aiNotesWindowRef && !_aiNotesWindowRef.closed) {
+            _aiNotesWindowRef.focus();
+            return;
+        }
+        
+        // Open new window
+        const aiNotesWindow = window.open( 
+            'http://localhost:3000/static/ai-notes-window.html', // Path to your HTML file
+            'AINotesWindow',
+            'width=800,height=600,resizable=yes,scrollbars=yes'
+        );
+        
+        if (aiNotesWindow) {
+            // Save reference to the window
+            dispatch({
+                type: UPDATE_AI_NOTES_WINDOW_REF,
+                windowRef: aiNotesWindow
+            });
+            
+            // Setup message listener for communication with the new window
+            window.addEventListener('message', this._handleAINotesWindowMessage);
+            
+            // Wait for window to load before sending data
+            window.addEventListener('message', (event) => {
+                if (event.data?.type === 'aiNotesWindowReady') {
+                    aiNotesWindow.postMessage({
+                        type: 'notesContent',
+                        content: _aiNotesContent || ''
+                    }, '*');
+            
+                    aiNotesWindow.postMessage({
+                        type: 'roomName',
+                        roomName: _meetingRealName || 'Unknown'
+                    }, '*');
+
+                    aiNotesWindow.postMessage({
+                        type: 'uuid',
+                        uuid: url
+                    }, '*');
+                }
+            
+                // optionally handle other messages
+            });
+        }
+    }
+
+    _handleAINotesWindowMessage(event) {
+        const { dispatch } = this.props;
+        
+        // Handle messages from the AI Notes window
+        if (event.data && event.data.type) {
+            switch (event.data.type) {
+                case 'notesUpdated':
+                case 'notesSaved':
+                    // Update Redux with the notes content
+                    dispatch({
+                        type: UPDATE_AI_NOTES_CONTENT,
+                        aiNotesContent: event.data.content
+                    });
+                    break;
+                    
+                case 'aiNotesWindowClosed':
+                    // Update Redux with the final notes before window closed
+                    dispatch({
+                        type: UPDATE_AI_NOTES_CONTENT,
+                        aiNotesContent: event.data.content
+                    });
+                    
+                    // Clean up window reference
+                    dispatch({
+                        type: UPDATE_AI_NOTES_WINDOW_REF,
+                        windowRef: null
+                    });
+                    
+                    // Remove the message listener
+                    window.removeEventListener('message', this._handleAINotesWindowMessage);
+                    break;
+                    
+                case 'aiNotesWindowReady':
+                    // Window is ready, we could trigger a notes generation if needed
+                    break;
+            }
+        }
+    }
+
+    _onAINotesButtonClick(event: React.MouseEvent<HTMLDivElement>) {
+        if (!event) {
+            return;
+        }
+        
+        this._openAINotesWindow();
+    }
+
     /**
      * Sets custom background opacity based on config. It also applies the
      * opacity on parent element, as the parent element is not accessible directly,
@@ -1004,9 +1113,8 @@ function _mapStateToProps(state: IReduxState) {
     const { local, localScreenShare, remote } = state["features/base/participants"];
     const localParticipant = getLocalParticipant(state);
     const { isScreenSharePopupOpen, isPDFScreenShare } = state["features/conference"];
-
     const { locationURL = { href: "" } as URL } = state["features/base/connection"];
-
+    const { meetingRealName } = state["features/conference"];
     return {
         ...abstractMapStateToProps(state),
         _backgroundAlpha: backgroundAlpha,
@@ -1031,6 +1139,7 @@ function _mapStateToProps(state: IReduxState) {
         _isScreenSharePopupOpen: isScreenSharePopupOpen,
         _locationURL: locationURL,
         _isPDFScreenShare: isPDFScreenShare,
+        _meetingRealName: meetingRealName
     };
 }
 

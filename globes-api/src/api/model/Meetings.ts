@@ -8,6 +8,12 @@ interface MeetingsAttributes {
     meetingDescription?: string;
 }
 
+export type MeetingSummary = {
+    meetingUUID: string;
+    language: string;
+    summary: string;
+}
+
 export type MeetingInput = Optional<MeetingsAttributes, 'id' | 'meetingDescription'>;
 export type MeetingOutput = Required<MeetingsAttributes>;
 

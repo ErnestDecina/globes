@@ -1,5 +1,5 @@
-import translateTextToLanguageNoContext from "../../utils/openai";
-import { MeetingInput, MeetingOutput } from "../model/Meetings";
+import  { makeSummaryOfMeeting,translateTextToLanguageNoContext } from "../../utils/openai";
+import { MeetingInput, MeetingOutput, MeetingSummary } from "../model/Meetings";
 import { MessageInput, MessageOutput } from "../model/Messages";
 import { TranslationInput, TranslationOutput } from "../model/TranslationMessages";
 import MeetingsRepository from "../repositories/MeetingsRepository";
@@ -102,6 +102,25 @@ class MeetingsService implements IMeetingsService {
         try {
             // Add Unhashing
             return TranslationsRepository.getTranslation(message_id, language);
+        } catch(error) {
+            console.error('Error getting translations:', error);
+            throw new Error('Failed to get translations');
+        }
+    }
+
+    async getSummary(
+        meeting_uuid: string,
+        language: string
+    ): Promise<MeetingSummary> {
+        try {
+            const response: MeetingSummary = {
+                meetingUUID: meeting_uuid,
+                language: language,
+                summary: ''
+            }
+
+            response.summary = await makeSummaryOfMeeting(meeting_uuid, language);
+            return response;
         } catch(error) {
             console.error('Error getting translations:', error);
             throw new Error('Failed to get translations');

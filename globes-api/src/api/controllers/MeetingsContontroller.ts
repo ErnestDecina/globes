@@ -106,6 +106,27 @@ class MeetingsController {
     }
   }
 
+  async getSummary(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const meetingUUID: string = req.params.meeting_uuid;
+      let langauge: string = req.query.lang;
+
+      if (!langauge) {
+        langauge = "en";
+      }
+
+      res
+        .status(200)
+        .send(await MeetingsService.getSummary(meetingUUID, langauge));
+    } catch (error) {
+      res.status(400).send();
+    }
+  }
+
   async handleFileUploadResponse(
     req: any,
     res: Response,
@@ -116,7 +137,7 @@ class MeetingsController {
     if (!req.file) {
       res.status(400).json({ error: "No file provided" });
     }
-    
+
     // Return the count of files in the response
     res.status(200).json({
       message: "Slides uploaded successfully",

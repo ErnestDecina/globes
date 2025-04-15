@@ -3,7 +3,7 @@ import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import { connect } from 'react-redux';
 import { makeStyles } from 'tss-react/mui';
 
-import { IReduxState } from '../../../../app/types';
+import { IReduxState, IStore } from '../../../../app/types';
 import DeviceStatus from '../../../../prejoin/components/web/preview/DeviceStatus';
 import { isRoomNameEnabled } from '../../../../prejoin/functions.web';
 import Toolbox from '../../../../toolbox/components/web/Toolbox';
@@ -21,6 +21,7 @@ import UnsafeRoomWarning from './UnsafeRoomWarning';
 
 import axios from 'axios';
 import { IState } from '../../../../connection-indicator/components/AbstractConnectionIndicator';
+import { UPDATE_MEETING_REAL_NAME } from '../../../../conference/actionTypes';
 
 interface IProps {
 
@@ -105,6 +106,8 @@ interface IProps {
      * The video track to render as preview (if omitted, the default local track will be rendered).
      */
     videoTrack?: Object;
+
+    dispatch: IStore["dispatch"];
 }
 
 const useStyles = makeStyles()(theme => {
@@ -198,7 +201,8 @@ const PreMeetingScreen = ({
     title,
     videoMuted,
     videoTrack,
-    _state
+    _state,
+    dispatch
 }: IProps) => {
     const { classes } = useStyles();
     const style = _premeetingBackground ? {
@@ -231,7 +235,10 @@ const PreMeetingScreen = ({
                 const response = await axios.get(`http://localhost:3000/api/v1/meetings/${url}`);
                 const data = await response.data;
                 setRoomName(data.meetingName);
-    
+                dispatch({
+                    type: UPDATE_MEETING_REAL_NAME,
+                    meetingRealName: data.meetingName
+                })
             } catch (error) {
                 // Handle any errors that might occur during the fetch operation
                 console.error('There was an error with the fetch operation:', error);

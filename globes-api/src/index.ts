@@ -18,6 +18,7 @@ interface ClientSocket extends Socket {
     uuid?: string;
 }
 
+
 io.on("connection", (socket: ClientSocket) => {
     console.log("A user connected:", socket.id);
 
