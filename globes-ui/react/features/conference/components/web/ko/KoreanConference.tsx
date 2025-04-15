@@ -88,6 +88,8 @@ import { IParticipant } from "../../../../base/participants/types";
 import { raiseHand } from "../../../../base/participants/actions";
 import { UPDATE_SCREENSHARE_POPUP_STATE } from "../../../actionTypes";
 import ScreenSharePopup from "./ScreenSharePopup";
+import languageDetector from "../../../../base/i18n/languageDetector.web";
+import axios from "axios";
 
 const FULL_SCREEN_EVENTS = ["webkitfullscreenchange", "mozfullscreenchange", "fullscreenchange"];
 
@@ -164,6 +166,8 @@ interface IProps extends AbstractProps, WithTranslation {
     _raiseHand: boolean;
 
     _isScreenSharePopupOpen: boolean;
+
+    _locationURL: URL;
     dispatch: IStore["dispatch"];
 }
 
@@ -275,7 +279,7 @@ class KoreanConference extends AbstractConference<IProps, any> {
                     flexDirection: "column",
                 }}
             >
-                <ScreenSharePopup 
+                <ScreenSharePopup
                     isOpen={this.props._isScreenSharePopupOpen}
                     onClose={this._toggleScreenSharePopup}
                     onScreenShare={this._handleScreenShare}
@@ -748,8 +752,6 @@ class KoreanConference extends AbstractConference<IProps, any> {
             return;
         }
 
-        console.log(`STATE: ` + this.props._isScreenSharePopupOpen);
-
         // If already screen sharing, just toggle it off
         if (this.props._isScreensharing) {
             this._handleScreenShare();
@@ -763,16 +765,15 @@ class KoreanConference extends AbstractConference<IProps, any> {
     _toggleScreenSharePopup() {
         const { dispatch, _isScreenSharePopupOpen } = this.props;
 
-        if(_isScreenSharePopupOpen) {
+        if (_isScreenSharePopupOpen) {
             dispatch({
                 type: UPDATE_SCREENSHARE_POPUP_STATE,
-                isScreenSharePopupOpen: false
+                isScreenSharePopupOpen: false,
             });
-        }
-        else {
+        } else {
             dispatch({
                 type: UPDATE_SCREENSHARE_POPUP_STATE,
-                isScreenSharePopupOpen: true
+                isScreenSharePopupOpen: true,
             });
         }
     }
@@ -792,10 +793,38 @@ class KoreanConference extends AbstractConference<IProps, any> {
         }
     }
 
-    _handleFileSubmit(files: { file1: File | null, file2: File | null }) {
-        console.log("Files submitted:", files);
-        // Here you would implement the logic to handle the uploaded files
-        // For example, dispatch an action to upload the files to your backend
+    _handleFileSubmit(files: { file1: File | null; file2: File | null }) {
+        const url = this.props._locationURL.pathname.slice(1);
+
+        if (files.file1) {
+            const formData = new FormData();
+            formData.append("slides", files.file1);
+
+            try {
+                axios.post(`http://localhost:3000/api/v1/meetings/${url}/slides?lang=en`, formData, {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                });
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        if (files.file2) {
+            const formData = new FormData();
+            formData.append("slides", files.file2);
+
+            try {
+                axios.post(`http://localhost:3000/api/v1/meetings/${url}/slides?lang=ko`, formData, {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                });
+            } catch (error) {
+                console.error(error);
+            }
+        }
     }
 
     _onRaiseHandButtonClick(event: React.MouseEvent<HTMLDivElement>) {
@@ -942,8 +971,10 @@ function _mapStateToProps(state: IReduxState) {
     const localDesktopTrack = getLocalDesktopTrack(tracks);
     const { local, localScreenShare, remote } = state["features/base/participants"];
     const localParticipant = getLocalParticipant(state);
-    const { isScreenSharePopupOpen } = state['features/conference'];
-    console.log('TEST' + isScreenSharePopupOpen);
+    const { isScreenSharePopupOpen } = state["features/conference"];
+
+    const { locationURL = { href: "" } as URL } = state["features/base/connection"];
+
     return {
         ...abstractMapStateToProps(state),
         _backgroundAlpha: backgroundAlpha,
@@ -965,7 +996,8 @@ function _mapStateToProps(state: IReduxState) {
         _seeWhatIsBeingShared: Boolean(seeWhatIsBeingShared),
         _localScreenShare: localScreenShare,
         _raiseHand: hasRaisedHand(localParticipant),
-        _isScreenSharePopupOpen: isScreenSharePopupOpen
+        _isScreenSharePopupOpen: isScreenSharePopupOpen,
+        _locationURL: locationURL,
     };
 }
 

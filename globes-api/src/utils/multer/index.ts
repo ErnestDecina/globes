@@ -139,12 +139,17 @@ async function convertPptToPdf(pptPath: string, outputPdfPath: string): Promise<
   
   // Using libreoffice-convert
   try {
+    // Using environment variables to ensure proper language support in LibreOffice
+    const env = { ...process.env, LC_ALL: 'en_US.UTF-8', LANG: 'en_US.UTF-8' };
+    
     const pdfBuffer = await libreConvert(inputBuffer, outputFormat, undefined);
     fs.writeFileSync(outputPdfPath, pdfBuffer);
   } catch (error) {
     // Fallback to command-line LibreOffice if available
     try {
-      await execPromise(`libreoffice --headless --convert-to pdf --outdir "${path.dirname(outputPdfPath)}" "${pptPath}"`);
+      // Set locale environment variables for better multilingual support
+      await execPromise(`LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 libreoffice --headless --convert-to pdf --outdir "${path.dirname(outputPdfPath)}" "${pptPath}"`, 
+        { env: { ...process.env, LC_ALL: 'en_US.UTF-8', LANG: 'en_US.UTF-8' } });
     } catch (cmdError) {
       throw new Error(`PowerPoint to PDF conversion failed: ${error.message}. Command line fallback also failed: ${cmdError.message}`);
     }
