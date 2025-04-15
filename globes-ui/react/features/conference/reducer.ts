@@ -1,3 +1,4 @@
+import API from "../../../modules/API";
 import ReducerRegistry from "../base/redux/ReducerRegistry";
 import { NEXT_IMAGE, PREVIOUS_IMAGE, SET_IMAGE_INDEX, SET_LANGUAGE, START_POWERPOINT_SLIDES, START_POWERPOINT_SLIDES_AS_PRESENTER, STOP_POWERPOINT_SLIDES_AS_PRESENTER, TOGGLE_DROPDOWN, UPDATE_SCREENSHARE_POPUP_STATE } from "./actionTypes";
 
@@ -6,7 +7,7 @@ const DEFAULT_STATE = {
     isLocalPDFScreenSharePresenter: false,
     isPDFScreenShare: false,
     pdfScreenShareCount: 0,
-    currentIndex: 0,
+    currentIndex: 1,
     languageSelection: 'ko',
     showDropdown: false
 };
@@ -24,6 +25,7 @@ export interface IKoreanConferenceState {
 ReducerRegistry.register<IKoreanConferenceState>('features/conference', (state = DEFAULT_STATE, action): IKoreanConferenceState => {
     switch (action.type) {
     case START_POWERPOINT_SLIDES: {
+      console.log(`WWWW: ${action.count}`);
         return {
             ...state,
             isLocalPDFScreenSharePresenter: false,
@@ -33,6 +35,7 @@ ReducerRegistry.register<IKoreanConferenceState>('features/conference', (state =
     }
 
     case START_POWERPOINT_SLIDES_AS_PRESENTER: {
+      console.log(`WWWW: ${action.count}`);
         return {
             ...state,
             isLocalPDFScreenSharePresenter: true,
@@ -68,14 +71,19 @@ ReducerRegistry.register<IKoreanConferenceState>('features/conference', (state =
     }
 
     case NEXT_IMAGE:
+      console.log(`${state.currentIndex}, ${state.pdfScreenShareCount}`);
+      const index = state.currentIndex === state.pdfScreenShareCount ? 1 : state.currentIndex + 1;
+      API.noitfyPowerpointIncrement(index);
       return {
         ...state,
-        currentIndex: state.currentIndex === state.pdfScreenShareCount - 1 ? 0 : state.currentIndex + 1
+        currentIndex: index
       };
     case PREVIOUS_IMAGE:
+      const index2 =  state.currentIndex === 1 ? state.pdfScreenShareCount : state.currentIndex - 1
+      API.noitfyPowerpointDecrement(index2);
       return {
         ...state,
-        currentIndex: state.currentIndex === 0 ? state.pdfScreenShareCount - 1 : state.currentIndex - 1
+        currentIndex: index2
       };
     case SET_LANGUAGE:
       return {

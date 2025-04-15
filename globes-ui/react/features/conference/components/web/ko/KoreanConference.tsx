@@ -94,6 +94,7 @@ import {
 import ScreenSharePopup from "./ScreenSharePopup";
 import languageDetector from "../../../../base/i18n/languageDetector.web";
 import axios from "axios";
+import API from "../../../../../../modules/API";
 
 const FULL_SCREEN_EVENTS = ["webkitfullscreenchange", "mozfullscreenchange", "fullscreenchange"];
 
@@ -765,6 +766,7 @@ class KoreanConference extends AbstractConference<IProps, any> {
         // If already screen sharing, just toggle it off
         if (this.props._isPDFScreenShare) {
             dispatch({ type: STOP_POWERPOINT_SLIDES_AS_PRESENTER });
+            API.noitfyPowerpointStop();
             return;
         }
 
@@ -850,9 +852,7 @@ class KoreanConference extends AbstractConference<IProps, any> {
                     type: START_POWERPOINT_SLIDES_AS_PRESENTER,
                     count: data.count,
                 });
-
-                // ALSO NOTIFY OTHER USERS
-                // count: data.count
+                API.noitfyPowerpointStart(data.count);
             } catch (error) {
                 console.error(error);
             }

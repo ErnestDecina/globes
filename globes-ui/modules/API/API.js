@@ -1,5 +1,6 @@
 /* global APP */
 import Logger from '@jitsi/logger';
+import { io } from 'socket.io-client';
 
 import { createApiEvent } from '../../react/features/analytics/AnalyticsEvents';
 import { sendAnalytics } from '../../react/features/analytics/functions';
@@ -133,6 +134,7 @@ import {
     ENDPOINT_TEXT_MESSAGE_NAME
 } from './constants';
 import languageDetector from '../../react/features/base/i18n/languageDetector.web';
+import {START_POWERPOINT_SLIDES, STOP_POWERPOINT_SLIDES_AS_PRESENTER, NEXT_IMAGE, PREVIOUS_IMAGE, SET_IMAGE_INDEX  } from '../../react/features/conference/actionTypes'
 
 const logger = Logger.getLogger(__filename);
 
@@ -1176,6 +1178,7 @@ function sanitizeMouseEvent(event) {
  */
 class API {
     _enabled;
+    socket;
 
     /**
      * Initializes the API. Setups message event listeners that will receive
@@ -1186,6 +1189,19 @@ class API {
      * @returns {void}
      */
     init() {
+        const path = window.location.pathname; // e.g., "/abc-uuid-123"
+        const uuid = path.replace(/^\/+/, ""); // removes leading "/"
+
+        if(uuid) {
+            this.socket = io('http://localhost:3000');
+            this.socket.emit("connect_to_uuid", uuid);
+            this.setupSocketListeners();
+        }
+        else {
+            console.error("No UUID found in URL path.");
+        }
+
+
         if (!shouldBeEnabled()) {
             return;
         }
@@ -1205,6 +1221,58 @@ class API {
         // Let the embedder know we are ready.
         this._sendEvent({ name: 'ready' });
     }
+
+    noitfyPowerpointIncrement(index) {
+        this.socket.emit('increment_slide_index', index.toString());
+    }
+
+    noitfyPowerpointDecrement(index) {
+        this.socket.emit('increment_slide_index', index.toString());
+    }
+
+    noitfyPowerpointStart(slideCount) {
+        console.log(`Notify Powerpoint ${slideCount}`);
+        this.socket.emit('start_powerpoint_presentation', slideCount.toString());
+    }
+
+    noitfyPowerpointStop() {
+        this.socket.emit('stop_powerpoint_presentation', true);
+    }
+
+    setupSocketListeners() {
+        this.socket.on('start_powerpoint_presentation', (slideCount) => {
+            console.log(slideCount);
+            APP.store.dispatch({
+                type: START_POWERPOINT_SLIDES,
+                count: Number(slideCount)
+            });
+        });
+
+        this.socket.on('stop_powerpoint_presentation', () => {
+            APP.store.dispatch({
+                type: STOP_POWERPOINT_SLIDES_AS_PRESENTER
+            })
+        });
+        
+        this.socket.on('increment_slide_index', (index) => {
+            let newIndex = Number(index);
+        
+            APP.store.dispatch({
+                type: SET_IMAGE_INDEX,
+                index: newIndex
+            })
+        });
+        
+        this.socket.on('decrement_slide_index', (index) => {
+            let newIndex = Number(index);
+        
+            APP.store.dispatch({
+                type: SET_IMAGE_INDEX,
+                index: newIndex
+            })
+        });
+    }
+
 
     /**
      * Notify external application (if API is enabled) that the large video

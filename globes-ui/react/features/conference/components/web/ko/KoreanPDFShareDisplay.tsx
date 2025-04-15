@@ -24,6 +24,7 @@ class KoreanPDFShareDisplay extends Component<IProps> {
     };
     
     handleNext = () => {
+      
       this.props.nextImage();
     };
   
@@ -49,7 +50,7 @@ class KoreanPDFShareDisplay extends Component<IProps> {
             position: "relative"
           }}>
             <img 
-              src={`http://localhost:3000/static/meetings/${this.props.url}/${this.props.language}/images/slide_00${this.props.currentIndex + 1}.png`} 
+              src={`http://localhost:3000/static/meetings/${this.props.url}/${this.props.language}/images/slide_00${this.props.currentIndex}.png`} 
               alt="Featured image" 
               style={{
                 width: "100%",
