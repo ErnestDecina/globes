@@ -6,6 +6,8 @@ import {
     getDominantSpeakerParticipant,
     getLocalParticipant,
     getParticipantByIdOrUndefined,
+    getParticipantCount,
+    getRemoteParticipantCountWithFake,
     hasRaisedHand
 } from "../../../../base/participants/functions";
 import {
@@ -41,7 +43,7 @@ export interface IState {
     raisedHands: Set<string>;
     dominantSpeakerId: string | null;
     randomSpeakerId: string | null;
-    lastDominantSpeakerId: string | undefined;
+    lastDominantSpeakerId: string | null;
     lastRandomSpeakerId: string | null;
 }
 
@@ -177,44 +179,53 @@ class KoreanWebCams extends Component<IProps, IState> {
         const dominantSpeakerId = this.props._dominantSpeaker;
         const moderatorId = this.getModeratorParticipant()?.id;
         const localId = this.props._localParticipant?.id;
-
+    
         // Get non-moderator, non-local participants
         const nonModeratorParticipants = this.getNonModeratorParticipants();
         const nonModeratorIds = nonModeratorParticipants.map(p => p.id);
-
-        let newDominantId: string | null = null;
-        let newRandomId: string | null = null;
-
+    
+        let newDominantId = this.state.dominantSpeakerId;
+        let newRandomId = this.state.randomSpeakerId;
+        let shouldUpdate = false;
+    
         // Set dominant speaker ID (if there is one)
-        if (dominantSpeakerId && dominantSpeakerId !== moderatorId && dominantSpeakerId !== localId && dominantSpeakerId !== this.state.lastDominantSpeakerId) {
+        if (dominantSpeakerId && dominantSpeakerId !== moderatorId && dominantSpeakerId !== localId && dominantSpeakerId !== this.state.dominantSpeakerId) {
             newDominantId = dominantSpeakerId;
-        } else if (nonModeratorIds.length > 0) {
+            shouldUpdate = true;
+        } else if (nonModeratorIds.length > 0 && !newDominantId) {
             // If no dominant speaker, use the first non-moderator
             newDominantId = nonModeratorIds[0];
+            shouldUpdate = true;
         }
-
-        // Set random speaker to a different person than dominant speaker
-        if (nonModeratorIds.length > 1) {
+    
+        // Only update random speaker when:
+        // 1. We don't have one yet
+        // 2. The current one is no longer available
+        const randomSpeakerStillAvailable = newRandomId && nonModeratorIds.includes(newRandomId) && newRandomId !== newDominantId;
+        
+        if (!randomSpeakerStillAvailable && nonModeratorIds.length > 1) {
             const availableSpeakers = nonModeratorIds.filter(id => id !== newDominantId);
-            if (availableSpeakers.length > 0 && newRandomId !== this.state.lastRandomSpeakerId) {
-                // Pick a random participant from available ones
+            
+            if (availableSpeakers.length > 0) {
                 const randomIndex = Math.floor(Math.random() * availableSpeakers.length);
                 newRandomId = availableSpeakers[randomIndex];
+                shouldUpdate = true;
             }
+        } else if (!randomSpeakerStillAvailable && nonModeratorIds.length === 1 && newDominantId) {
+            // In case we only have one non-moderator participant, use them for both
+            newRandomId = newDominantId; 
+            shouldUpdate = true;
         }
-
-        // If we still don't have a random speaker but need one
-        if (!newRandomId && nonModeratorIds.length === 1 && newDominantId) {
-            // In case we only have one non-moderator participant, use them for both (better than empty)
-            newRandomId = newDominantId;
+    
+        // Only update state when necessary
+        if (shouldUpdate) {
+            this.setState({
+                dominantSpeakerId: newDominantId,
+                randomSpeakerId: newRandomId,
+                lastDominantSpeakerId: this.state.dominantSpeakerId,
+                lastRandomSpeakerId: this.state.randomSpeakerId
+            });
         }
-
-        this.setState({
-            lastRandomSpeakerId: this.state.randomSpeakerId,
-            lastDominantSpeakerId: dominantSpeakerId,
-            dominantSpeakerId: newDominantId,
-            randomSpeakerId: newRandomId
-        });
     };
 
     updateVideoTracks = () => {
@@ -254,7 +265,6 @@ class KoreanWebCams extends Component<IProps, IState> {
         }
 
         // Attach dominant speaker video
-        console.log(`${this.state.dominantSpeakerId}, ${this.state.lastDominantSpeakerId}`);
         if (this.state.dominantSpeakerId) {
             const success = this.attachTrackToVideoElement(
                 this.state.dominantSpeakerId, 
@@ -326,9 +336,8 @@ class KoreanWebCams extends Component<IProps, IState> {
         return participant?.name || "Unknown";
     };
 
-    getParticipantCount = () => {
-        // Count local user + remote participants
-        return 1 + this.props._remoteParticipants.length;
+    getParticipantCount = () => {  
+        return getParticipantCount(this.props._state);
     };
 
     componentDidUpdate(prevProps: Readonly<IProps>, prevState: Readonly<IState>) {
