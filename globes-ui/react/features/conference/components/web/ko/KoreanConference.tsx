@@ -7,27 +7,17 @@ import { connect as reactReduxConnect, useSelector } from "react-redux";
 import VideoLayout from "../../../../../../modules/UI/videolayout/VideoLayout";
 import { IReduxState, IStore } from "../../../../app/types";
 import { getConferenceNameForTitle } from "../../../../base/conference/functions";
-import { hangup } from "../../../../base/connection/actions.web";
-import { isMobileBrowser } from "../../../../base/environment/utils";
 import { translate } from "../../../../base/i18n/functions";
 import { setColorAlpha } from "../../../../base/util/helpers";
-import Chat from "../../../../chat/components/web/Chat";
-import MainFilmstrip from "../../../../filmstrip/components/web/MainFilmstrip";
-import ScreenshareFilmstrip from "../../../../filmstrip/components/web/ScreenshareFilmstrip";
-import StageFilmstrip from "../../../../filmstrip/components/web/StageFilmstrip";
-import CalleeInfoContainer from "../../../../invite/components/callee-info/CalleeInfoContainer";
 import KoreanLargeVideo from "./KoreanLargeVideo.web";
 import LobbyScreen from "../../../../lobby/components/web/LobbyScreen";
 import { getIsLobbyVisible } from "../../../../lobby/functions";
 import { getOverlayToRender } from "../../../../overlay/functions.web";
-import ParticipantsPane from "../../../../participants-pane/components/web/ParticipantsPane";
 import Prejoin from "../../../../prejoin/components/web/Prejoin";
 import { isPrejoinPageVisible } from "../../../../prejoin/functions";
 import ReactionAnimations from "../../../../reactions/components/web/ReactionsAnimations";
-import { handleToggleVideoMuted, toggleToolboxVisible } from "../../../../toolbox/actions.any";
+import { toggleToolboxVisible } from "../../../../toolbox/actions.any";
 import { closeOverflowMenuIfOpen, fullScreenChanged, showToolbox } from "../../../../toolbox/actions.web";
-import JitsiPortal from "../../../../toolbox/components/web/JitsiPortal";
-import Toolbox from "../../../../toolbox/components/web/Toolbox";
 import { LAYOUT_CLASSNAMES } from "../../../../video-layout/constants";
 import { getCurrentLayout } from "../../../../video-layout/functions.any";
 import VisitorsQueue from "../../../../visitors/components/web/VisitorsQueue";
@@ -36,11 +26,6 @@ import { init } from "../../../actions.web";
 import { maybeShowSuboptimalExperienceNotification } from "../../../functions.web";
 import { AbstractConference, abstractMapStateToProps } from "../../AbstractConference";
 import type { AbstractProps } from "../../AbstractConference";
-
-import ConferenceInfo from "../ConferenceInfo";
-import { default as Notice } from "../Notice";
-import ScreenSharePlaceholderWeb from "../../../../large-video/components/ScreenSharePlaceholder.web";
-import KoreanMainFilmstrip from "./KoreanMainFilmstrip";
 import KoreanWebCams from "./KoreanWebCams";
 import {
     X,
@@ -74,8 +59,6 @@ import { IGUMPendingState } from "../../../../base/media/types";
 import { getLocalDesktopTrack, isLocalTrackMuted } from "../../../../base/tracks/functions.web";
 import { MEDIA_TYPE, VIDEO_MUTISM_AUTHORITY } from "../../../../base/media/constants";
 import { muteLocal } from "../../../../video-menu/actions.web";
-import { toggleCamera } from "../../../../base/tracks/actions.any";
-import { setVideoMuted } from "../../../../base/media/actions";
 import { SET_VIDEO_MUTED } from "../../../../base/media/actionTypes";
 import { isScreenVideoShared } from "../../../../screen-share/functions";
 import { startScreenShareFlow } from "../../../../screen-share/actions.web";
@@ -94,7 +77,6 @@ import {
     UPDATE_SCREENSHARE_POPUP_STATE,
 } from "../../../actionTypes";
 import ScreenSharePopup from "./ScreenSharePopup";
-import languageDetector from "../../../../base/i18n/languageDetector.web";
 import axios from "axios";
 import API from "../../../../../../modules/API";
 
@@ -262,6 +244,8 @@ class KoreanConference extends AbstractConference<IProps, any> {
 
     componentDidUpdate(prevProps: Readonly<IProps>, prevState: Readonly<any>, snapshot?: any): void {
         const { _localScreenShare, _isScreensharing } = this.props;
+
+
 
         if (_localScreenShare && _isScreensharing) {
             VideoLayout.updateLargeVideo(_localScreenShare?.id, true, true);
@@ -446,24 +430,6 @@ class KoreanConference extends AbstractConference<IProps, any> {
                                             <MicOff size={20} />
                                         </button>
                                     )}
-
-                                    {/* Mute Audio */}
-                                    {/* <button
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            width: "40px",
-                                            height: "40px",
-                                            borderRadius: "50%",
-                                            backgroundColor: "#2cfc03",
-                                            color: "white",
-                                            border: "none",
-                                            cursor: "pointer",
-                                        }}
-                                    >
-                                        <Headphones size={20} />
-                                    </button> */}
 
                                     {/* Video Camera */}
                                     {!this.props._videoMuted ? (
@@ -694,7 +660,6 @@ class KoreanConference extends AbstractConference<IProps, any> {
 
                     {shouldShowPrejoin(this.props) && <Prejoin />}
                     {_showLobby && !_showVisitorsQueue && <LobbyScreen />}
-                    {_showVisitorsQueue && <VisitorsQueue />}
                 </div>
                 <ReactionAnimations />
             </div>

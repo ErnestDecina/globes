@@ -40,6 +40,7 @@ import type { AbstractProps } from '../../AbstractConference';
 
 import ConferenceInfo from '../ConferenceInfo';
 import { default as Notice } from '../Notice';
+import { ITracksState } from '../../../../base/tracks/reducer';
 
 const FULL_SCREEN_EVENTS = [
     'webkitfullscreenchange',
@@ -99,6 +100,8 @@ interface IProps extends AbstractProps, WithTranslation {
      * be false.
      */
     _showVisitorsQueue: boolean;
+
+    _tacks:  ITracksState;
 
     dispatch: IStore['dispatch'];
 }
@@ -182,8 +185,11 @@ class DefaultConference extends AbstractConference<IProps, any> {
             _showLobby,
             _showPrejoin,
             _showVisitorsQueue,
-            t
+            t,
+            _tacks
         } = this.props;
+
+        console.log(_tacks);
 
         return (
             <div
@@ -368,7 +374,7 @@ class DefaultConference extends AbstractConference<IProps, any> {
 function _mapStateToProps(state: IReduxState) {
     const { backgroundAlpha, mouseMoveCallbackInterval } = state['features/base/config'];
     const { overflowDrawer } = state['features/toolbox'];
-
+    const tracks = state["features/base/tracks"];
     return {
         ...abstractMapStateToProps(state),
         _backgroundAlpha: backgroundAlpha,
@@ -379,7 +385,8 @@ function _mapStateToProps(state: IReduxState) {
         _roomName: getConferenceNameForTitle(state),
         _showLobby: getIsLobbyVisible(state),
         _showPrejoin: isPrejoinPageVisible(state),
-        _showVisitorsQueue: showVisitorsQueue(state)
+        _showVisitorsQueue: showVisitorsQueue(state),
+        _tacks: tracks
     };
 }
 

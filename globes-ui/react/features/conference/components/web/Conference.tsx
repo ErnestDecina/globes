@@ -160,6 +160,7 @@ class Conference extends AbstractConference<IProps, any> {
      */
     componentDidMount() {
         document.title = `${this.props._roomName} | ${interfaceConfig.APP_NAME}`;
+        APP.conference._room.setLastN(10);
     }
 
     /**

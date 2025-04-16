@@ -1,382 +1,406 @@
-import React, { Component, createRef, RefObject, useRef } from "react";
-import { IReduxState } from "../../../../app/types";
+import React, { Component } from "react";
+import { IReduxState, IStore } from "../../../../app/types";
 import { connect } from "react-redux";
-import { getDominantSpeakerParticipant, getParticipantByIdOrUndefined } from "../../../../base/participants/functions";
 import {
-    getLocalAudioTrack,
+    getDominantSpeakerParticipant,
+    getParticipantByIdOrUndefined
+} from "../../../../base/participants/functions";
+import {
     getLocalVideoTrack,
     getTrackByMediaTypeAndParticipant,
     getVideoTrackByParticipant,
-    isLocalTrackMuted,
+    isLocalTrackMuted
 } from "../../../../base/tracks/functions.web";
 import { MEDIA_TYPE } from "../../../../base/media/constants";
-import VideoTrack from "../../../../base/media/components/web/VideoTrack";
-import Video from "../../../../base/media/components/web/Video";
 import { IParticipant } from "../../../../base/participants/types";
+import { ITracksState } from "../../../../base/tracks/reducer";
+import { setVisibleRemoteParticipants } from "../../../../filmstrip/actions.web";
 
 interface IProps {
-    /**
-     * The participants in the call.
-     */
     _remoteParticipants: Array<string>;
-
-    /**
-     * The length of the remote participants array.
-     */
     _remoteParticipantsLength: number;
-
     _state: IReduxState;
-
     _localParticipant: IParticipant | undefined;
     _moderatorVideoStream: any;
-
     _localVideoMuted: boolean;
+    _dominantSpeaker: string | undefined;
+    _tracks: ITracksState;
+    dispatch: IStore['dispatch']
 }
 
 export interface IState {
-    /**
-     * Indicates that the canplay event has been received.
-     */
     canPlayEventReceived: boolean;
-
-    /**
-     * The current display mode of the thumbnail.
-     */
     displayMode: number;
-
-    /**
-     * Indicates whether the thumbnail is hovered or not.
-     */
     isHovered: boolean;
-
-    /**
-     * Whether popover is visible or not.
-     */
     popoverVisible: boolean;
-
-    currentDomininantSpeaker: IParticipant;
+    activeSpeakers: Set<string>;
+    raisedHands: Set<string>;
+    dominantSpeakerId: string | undefined;
+    randomSpeakerId: string | undefined;
+    lastDominantSpeakerId: string | undefined;
 }
 
 class KoreanWebCams extends Component<IProps, IState> {
     public moderatorVideoRef = React.createRef<HTMLVideoElement>();
     public localVideoRef = React.createRef<HTMLVideoElement>();
-    public domininatSpeaker1VideoRef = React.createRef<HTMLVideoElement>();
-    public domininatSpeaker2VideoRef = React.createRef<HTMLVideoElement>();
-    public domininatSpeaker3VideoRef = React.createRef<HTMLVideoElement>();
-    public currentDominantSpeaker: IParticipant | undefined;
-    public previousDominantSpeaker: IParticipant | undefined;
+    public dominantSpeakerVideoRef = React.createRef<HTMLVideoElement>();
+    public randomSpeakerVideoRef = React.createRef<HTMLVideoElement>();
+
+    private speakerUpdateInterval: number | null = null;
+    private participantUpdateInterval: number | null = null;
 
     constructor(props: IProps) {
         super(props);
-
-        this.currentDominantSpeaker = this.props._localParticipant;
-        this.previousDominantSpeaker = this.props._localParticipant;
+        this.state = {
+            canPlayEventReceived: false,
+            displayMode: 0,
+            isHovered: false,
+            popoverVisible: false,
+            activeSpeakers: new Set<string>(),
+            raisedHands: new Set<string>(),
+            dominantSpeakerId: null,
+            randomSpeakerId: null,
+            lastDominantSpeakerId: null
+        };
     }
 
-    componentDidMount() {}
+    componentDidMount() {
+        this.speakerUpdateInterval = window.setInterval(() => {
+            this.updateActiveSpeakers();
+            this.updateRaisedHands();
+        }, 1000);
 
-    componentDidUpdate(prevProps: Readonly<IProps>, prevState: Readonly<IState>, snapshot?: any): void {
+        this.participantUpdateInterval = window.setInterval(() => {
+            this.updateDominantAndRandomSpeakers();
+            this.updateVideoTracks();
+        }, 2000);
+
+        this.updateDominantAndRandomSpeakers();
+        this.updateVideoTracks();
+
+        const { dispatch, _remoteParticipants } = this.props;
+    
+        // Make all remote participants visible to ensure their tracks are available
+        dispatch(setVisibleRemoteParticipants(0, _remoteParticipants.length));
+    }
+
+    componentWillUnmount() {
+        if (this.speakerUpdateInterval) {
+            clearInterval(this.speakerUpdateInterval);
+        }
+        if (this.participantUpdateInterval) {
+            clearInterval(this.participantUpdateInterval);
+        }
+    }
+
+    getModeratorParticipant = () => {
+        if (this.props._localParticipant?.role === "moderator") {
+            return this.props._localParticipant;
+        }
+        for (const participantId of this.props._remoteParticipants) {
+            const participant = getParticipantByIdOrUndefined(this.props._state, participantId);
+            if (participant?.role === "moderator") {
+                return participant;
+            }
+        }
+        return null;
+    };
+
+    getNonModeratorParticipants = () => {
+        const moderatorId = this.getModeratorParticipant()?.id;
+        const localId = this.props._localParticipant?.id;
+        
+        return this.props._remoteParticipants
+            .map(id => getParticipantByIdOrUndefined(this.props._state, id))
+            .filter(p => p && p.id !== moderatorId && p.id !== localId) as IParticipant[];
+    };
+
+    isParticipantSpeaking = (participantId: string | undefined): boolean => {
+        if (!participantId) return false;
         const tracks = this.props._state["features/base/tracks"];
-        const isLocal = this.props._localParticipant?.local ?? true;
-        const _videoTrack = getLocalVideoTrack(tracks);
+        const audioTrack = getTrackByMediaTypeAndParticipant(tracks, MEDIA_TYPE.AUDIO, participantId);
+        const audioLevel = audioTrack?.jitsiTrack?.getAudioLevel?.() || 0;
+        return audioLevel > 0.15;
+    };
 
-        // Mod & Local webcam
-        const localJitsiVideoTrack = _videoTrack?.jitsiTrack;
-        const videoTrackId = localJitsiVideoTrack?.getId();
-
-        if (this.moderatorVideoRef.current && localJitsiVideoTrack) {
-            // Local is Mod
-            if (this.props._localParticipant?.role === "moderator") {
-                console.log("Applying Local Mod camera");
-                localJitsiVideoTrack?.attach(this.moderatorVideoRef.current);
-                this.moderatorVideoRef.current.className = "";
-                this.moderatorVideoRef.current.id = "localVideo_container";
-                this.moderatorVideoRef.current.muted = true;
-                this.moderatorVideoRef.current.autoplay = true;
-
-                if (this.domininatSpeaker1VideoRef.current) {
-                    console.log("Unapplaying Local camera");
-                    this.domininatSpeaker1VideoRef.current.srcObject = null;
-                    this.domininatSpeaker1VideoRef.current.id = "domSpeaker1";
-                }
+    updateActiveSpeakers = () => {
+        const newActiveSpeakers = new Set<string>();
+        if (this.props._localParticipant && this.isParticipantSpeaking(this.props._localParticipant.id)) {
+            newActiveSpeakers.add(this.props._localParticipant.id);
+        }
+        this.props._remoteParticipants.forEach(participantId => {
+            if (this.isParticipantSpeaking(participantId)) {
+                newActiveSpeakers.add(participantId);
             }
+        });
+        if (JSON.stringify(Array.from(newActiveSpeakers)) !== JSON.stringify(Array.from(this.state.activeSpeakers))) {
+            this.setState({ activeSpeakers: newActiveSpeakers });
+        }
+    };
 
-            // Remote is Mod
-            else {
-                this.props._remoteParticipants.forEach((participantString) => {
-                    const participant = getParticipantByIdOrUndefined(this.props._state, participantString);
+    updateRaisedHands = () => {
+        const newRaisedHands = new Set<string>();
+        const checkParticipant = (participant: IParticipant | undefined) => {
+            if (participant?.raisedHand) {
+                newRaisedHands.add(participant.id);
+            }
+        };
+        checkParticipant(this.props._localParticipant);
+        this.props._remoteParticipants.forEach(pid => checkParticipant(getParticipantByIdOrUndefined(this.props._state, pid)));
+        if (JSON.stringify(Array.from(newRaisedHands)) !== JSON.stringify(Array.from(this.state.raisedHands))) {
+            this.setState({ raisedHands: newRaisedHands });
+        }
+    };
 
-                    if (participant?.role === "moderator") {
-                        console.log("Applying Remote Mod camera");
-                        const id = participant?.id ?? "";
-                        const tracks = this.props._state["features/base/tracks"];
-                        const _videoTrack = getVideoTrackByParticipant(this.props._state, participant);
-                        const _audioTrack = getTrackByMediaTypeAndParticipant(tracks, MEDIA_TYPE.AUDIO, id);
+    updateDominantAndRandomSpeakers = () => {
+        const dominantSpeakerId = this.props._dominantSpeaker;
+        const moderatorId = this.getModeratorParticipant()?.id;
+        const localId = this.props._localParticipant?.id;
 
-                        const jitsiVideoTrack = _videoTrack?.jitsiTrack;
-                        const videoTrackId = jitsiVideoTrack?.getId();
+        // Get non-moderator, non-local participants
+        const nonModeratorParticipants = this.getNonModeratorParticipants();
+        const nonModeratorIds = nonModeratorParticipants.map(p => p.id);
 
-                        if (this.moderatorVideoRef.current) {
-                            jitsiVideoTrack?.attach(this.moderatorVideoRef.current);
-                            this.moderatorVideoRef.current.className = "";
-                            this.moderatorVideoRef.current.id = `remoteVideo_${videoTrackId || ""}`;
-                            this.moderatorVideoRef.current.muted = true;
-                            this.moderatorVideoRef.current.autoplay = true;
-                        }
-                    }
-                });
+        let newDominantId: string | null = null;
+        let newRandomId: string | null = null;
 
-                // Only Local webcam
-                if (this.localVideoRef.current) {
-                    console.log("Applying Local camera");
-                    localJitsiVideoTrack?.attach(this.localVideoRef.current);
-                    this.localVideoRef.current.muted = true;
-                    this.localVideoRef.current.autoplay = true;
-                }
+        // Set dominant speaker ID (if there is one)
+        if (dominantSpeakerId && dominantSpeakerId !== moderatorId && dominantSpeakerId !== localId) {
+            newDominantId = dominantSpeakerId;
+        } else if (nonModeratorIds.length > 0) {
+            // If no dominant speaker, use the first non-moderator
+            newDominantId = nonModeratorIds[0];
+        }
+
+        // Set random speaker to a different person than dominant speaker
+        if (nonModeratorIds.length > 1) {
+            const availableSpeakers = nonModeratorIds.filter(id => id !== newDominantId);
+            if (availableSpeakers.length > 0) {
+                // Pick a random participant from available ones
+                const randomIndex = Math.floor(Math.random() * availableSpeakers.length);
+                newRandomId = availableSpeakers[randomIndex];
             }
         }
 
-        // Dominant Speaker Camera
-        if (
-            (this.domininatSpeaker1VideoRef.current && this.domininatSpeaker2VideoRef.current) ||
-            this.domininatSpeaker3VideoRef.current
-        ) {
-            console.log("Applying Entered Domininant speaker cameras");
+        // If we still don't have a random speaker but need one
+        if (!newRandomId && nonModeratorIds.length === 1 && newDominantId) {
+            // In case we only have one non-moderator participant, use them for both (better than empty)
+            newRandomId = newDominantId;
+        }
 
-            const newDomininantSpeaker = getDominantSpeakerParticipant(this.props._state);
+        this.setState({
+            dominantSpeakerId: newDominantId,
+            randomSpeakerId: newRandomId,
+            lastDominantSpeakerId: dominantSpeakerId
+        });
+    };
 
-            if (
-                newDomininantSpeaker?.id !== this.props._localParticipant?.id &&
-                this.currentDominantSpeaker?.id !== this.props._localParticipant?.id &&
-                newDomininantSpeaker?.id !== this.currentDominantSpeaker?.id
-            ) {
-                this.previousDominantSpeaker = this.currentDominantSpeaker;
-                console.log(newDomininantSpeaker?.id);
-                console.log(this.currentDominantSpeaker?.id);
-                console.log(this.props._localParticipant?.id);
+    updateVideoTracks = () => {
+        const isLocalModerator = this.props._localParticipant?.role === "moderator";
+        const moderator = this.getModeratorParticipant();
 
-                if (newDomininantSpeaker && this.previousDominantSpeaker) {
-                    console.log("Applying Domininant speaker cameras");
-                    if (this.previousDominantSpeaker?.id !== newDomininantSpeaker?.id) {
-                        this.currentDominantSpeaker = newDomininantSpeaker;
-                        // If mod set only 2 domSpeaker
-                        if (this.props._localParticipant?.role === "moderator") {
-                            console.log("Applying Domininant speaker 1");
-                            // Set New Domininant to domSpeaker 1
-                            const participant = getParticipantByIdOrUndefined(
-                                this.props._state,
-                                newDomininantSpeaker?.id
-                            );
+        // Attach moderator video
+        if (moderator) {
+            if (moderator.local) {
+                const tracks = this.props._state["features/base/tracks"];
+                const localVideoTrack = getLocalVideoTrack(tracks);
+                const localJitsiTrack = localVideoTrack?.jitsiTrack;
 
-                            const id = participant?.id ?? "";
-                            const tracks = this.props._state["features/base/tracks"];
-                            const _videoTrack = getVideoTrackByParticipant(this.props._state, participant);
-                            const _audioTrack = getTrackByMediaTypeAndParticipant(tracks, MEDIA_TYPE.AUDIO, id);
-
-                            const jitsiVideoTrack = _videoTrack?.jitsiTrack;
-                            const videoTrackId = jitsiVideoTrack?.getId();
-
-                            if (this.domininatSpeaker1VideoRef.current) {
-                                jitsiVideoTrack?.attach(this.domininatSpeaker1VideoRef.current);
-                                this.domininatSpeaker1VideoRef.current.className = "";
-                                this.domininatSpeaker1VideoRef.current.id = `remoteVideo_${videoTrackId || ""}`;
-                                this.domininatSpeaker1VideoRef.current.muted = true;
-                                this.domininatSpeaker1VideoRef.current.autoplay = true;
-                            }
-
-                            // Set Previous Domininant to domSpeaker 2
-                            // Set New Domininant to domSpeaker 1
-                            console.log("Applying Domininant speaker 2");
-                            const participant2 = getParticipantByIdOrUndefined(
-                                this.props._state,
-                                this.previousDominantSpeaker?.id
-                            );
-
-                            const id2 = participant2?.id ?? "";
-                            const _videoTrack2 = getVideoTrackByParticipant(this.props._state, participant2);
-                            const _audioTrack2 = getTrackByMediaTypeAndParticipant(tracks, MEDIA_TYPE.AUDIO, id2);
-
-                            const jitsiVideoTrack2 = _videoTrack2?.jitsiTrack;
-                            const videoTrackId2 = jitsiVideoTrack2?.getId();
-
-                            if (this.domininatSpeaker2VideoRef.current) {
-                                jitsiVideoTrack2?.attach(this.domininatSpeaker2VideoRef.current);
-                                this.domininatSpeaker2VideoRef.current.className = "";
-                                this.domininatSpeaker2VideoRef.current.id = `remoteVideo_${videoTrackId2 || ""}`;
-                                this.domininatSpeaker2VideoRef.current.muted = true;
-                                this.domininatSpeaker2VideoRef.current.autoplay = true;
-                            }
-                        }
-                        // else set 1 domSpeaker
-                        else {
-                            // Set New Domininant to domSpeaker 3
-                            console.log("Applying Domininant speaker 3");
-                            const participant = getParticipantByIdOrUndefined(
-                                this.props._state,
-                                this.currentDominantSpeaker?.id
-                            );
-
-                            const id = participant?.id ?? "";
-                            const tracks = this.props._state["features/base/tracks"];
-                            const _videoTrack = getVideoTrackByParticipant(this.props._state, participant);
-                            const _audioTrack = getTrackByMediaTypeAndParticipant(tracks, MEDIA_TYPE.AUDIO, id);
-
-                            const jitsiVideoTrack = _videoTrack?.jitsiTrack;
-                            const videoTrackId = jitsiVideoTrack?.getId();
-
-                            if (this.domininatSpeaker3VideoRef.current) {
-                                jitsiVideoTrack?.attach(this.domininatSpeaker3VideoRef.current);
-                                this.domininatSpeaker3VideoRef.current.className = "";
-                                this.domininatSpeaker3VideoRef.current.id = `remoteVideo_${videoTrackId || ""}`;
-                                this.domininatSpeaker3VideoRef.current.muted = true;
-                                this.domininatSpeaker3VideoRef.current.autoplay = true;
-                            }
-                        }
-                    }
+                if (this.moderatorVideoRef.current && localJitsiTrack) {
+                    localJitsiTrack.attach(this.moderatorVideoRef.current);
+                    this.moderatorVideoRef.current.muted = true;
+                    this.moderatorVideoRef.current.autoplay = true;
                 }
+            } else {
+                this.attachTrackToVideoElement(moderator.id, this.moderatorVideoRef, "moderatorVideo");
             }
         }
+
+        // Attach local user video (only if not a moderator)
+        if (!isLocalModerator && this.props._localParticipant) {
+            const tracks = this.props._state["features/base/tracks"];
+            const localVideoTrack = getLocalVideoTrack(tracks);
+            const localJitsiTrack = localVideoTrack?.jitsiTrack;
+
+            if (this.localVideoRef.current && localJitsiTrack) {
+                localJitsiTrack.attach(this.localVideoRef.current);
+                this.localVideoRef.current.muted = true;
+                this.localVideoRef.current.autoplay = true;
+            }
+        }
+
+        // Attach dominant speaker video
+        if (this.state.dominantSpeakerId) {
+            const success = this.attachTrackToVideoElement(
+                this.state.dominantSpeakerId, 
+                this.dominantSpeakerVideoRef, 
+                "dominantSpeakerVideo"
+            );
+            if (!success) {
+                console.log("Failed to attach dominant speaker video", this.state.dominantSpeakerId);
+            }
+        }
+        
+        // Attach random speaker video
+        if (this.state.randomSpeakerId) {
+            const success = this.attachTrackToVideoElement(
+                this.state.randomSpeakerId, 
+                this.randomSpeakerVideoRef, 
+                "randomSpeakerVideo"
+            );
+            if (!success) {
+                console.log("Failed to attach random speaker video", this.state.randomSpeakerId);
+            }
+        }
+    };
+
+    attachTrackToVideoElement = (participantId: string | null | undefined, videoRef: React.RefObject<HTMLVideoElement>, elementId: string) => {
+        if (!participantId || !videoRef.current) return false;
+
+        console.log(this.props._tracks);
+
+        const participant = getParticipantByIdOrUndefined(this.props._state, participantId);
+        console.log(participant);
+        if (!participant) return false;
+
+        const videoTrack = getVideoTrackByParticipant(this.props._state, participant);
+        const jitsiVideoTrack = videoTrack?.jitsiTrack;
+        console.log(videoTrack);
+  
+        if (jitsiVideoTrack && videoRef.current) {
+            try {
+                
+                jitsiVideoTrack.attach(videoRef.current);
+                videoRef.current.className = "";
+                videoRef.current.id = elementId;
+                videoRef.current.muted = true;
+                videoRef.current.autoplay = true;
+                return true;
+            } catch (e) {
+                console.error("Error attaching track:", e);
+                return false;
+            }
+        }
+        return false;
+    };
+
+    getBorderStyle = (participantId: string | null | undefined) => {
+        if (!participantId) return {};
+        let style = { border: "none", boxShadow: "none" };
+        if (this.state.raisedHands.has(participantId)) {
+            style = { border: "4px solid yellow", boxShadow: "0 0 10px yellow" };
+        }
+        if (this.state.activeSpeakers.has(participantId)) {
+            style = { border: "4px solid green", boxShadow: "0 0 10px green" };
+        }
+        return style;
+    };
+
+    getParticipantDisplayName = (participantId: string | null | undefined) => {
+        if (!participantId) return "Unknown";
+        const participant = getParticipantByIdOrUndefined(this.props._state, participantId);
+        return participant?.name || "Unknown";
+    };
+
+    getParticipantCount = () => {
+        // Count local user + remote participants
+        return 1 + this.props._remoteParticipants.length;
+    };
+
+    componentDidUpdate(prevProps: Readonly<IProps>, prevState: Readonly<IState>) {
+        const { dispatch } = this.props;
+        
+        console.log("Remote participants:", this.props._remoteParticipants);
+        console.log("All tracks:", this.props._tracks);
+        
+        if (JSON.stringify(prevProps._remoteParticipants) !== JSON.stringify(this.props._remoteParticipants)) {
+            const { dispatch, _remoteParticipants } = this.props;
+    
+            // Make all remote participants visible to ensure their tracks are available
+            dispatch(setVisibleRemoteParticipants(0, _remoteParticipants.length));
+            
+            this.updateDominantAndRandomSpeakers();
+            this.updateVideoTracks();
+        }
+        if (prevState.dominantSpeakerId !== this.state.dominantSpeakerId || 
+            prevState.randomSpeakerId !== this.state.randomSpeakerId) {
+            this.updateVideoTracks();
+        }
+    };
+
+    renderVideoContainer = (videoRef: React.RefObject<HTMLVideoElement>, participantId: string | null | undefined, label: string, isMuted: boolean = false) => {
+        return (
+            <div style={{ position: 'relative', marginBottom: '10px' }} >
+                <label style={{ color: "black", marginBottom: '5px', display: 'block' }}>
+                    {label} {participantId && this.state.activeSpeakers.has(participantId) ? "(말하는 중)" : ""}
+                </label>
+                <div style={{
+                    ...this.getBorderStyle(participantId),
+                    overflow: 'hidden',
+                    borderRadius: '8px',
+                    minHeight: '120px',
+                    background: '#f0f0f0'
+                }}>
+                    {!isMuted ? (
+                        <video
+                            ref={videoRef}
+                            style={{ width: "100%", height: "auto" }}
+                        ></video>
+                    ) : (
+                        <img
+                            src="https://cdn-icons-png.flaticon.com/512/482/482432.png"
+                            style={{ width: "100%", height: "auto" }}
+                            alt="Video muted"
+                        />
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    _onRender() {
+        const { dispatch, _remoteParticipants } = this.props;
+        dispatch(setVisibleRemoteParticipants(0, _remoteParticipants.length));
     }
 
     render() {
-        const modAndLocal = (
+        const moderator = this.getModeratorParticipant();
+        const isLocalModerator = this.props._localParticipant?.role === "moderator";
+        const participantCount = this.getParticipantCount();
+        const dominantSpeakerName = this.getParticipantDisplayName(this.state.dominantSpeakerId);
+        const randomSpeakerName = this.getParticipantDisplayName(this.state.randomSpeakerId);
+        return (
             <div>
-                {/* Moderator WebCam */}
-                <div>
-                    <label
-                        style={{
-                            color: "black",
-                        }}
-                    >
-                        주최자
-                    </label>
-                    {!this.props._localVideoMuted ? (
-                        <video
-                            ref={this.moderatorVideoRef}
-                            style={{
-                                width: "100%",
-                                height: "auto",
-                            }}
-                        ></video>
-                    ) : (
-                        <img src="https://cdn-icons-png.flaticon.com/512/482/482432.png"
-                        style={{
-                            width: "100%",
-                            height: "auto",
-                        }}></img>
-                    )}
-                </div>
+                {/* Moderator Video */}
+                {this.renderVideoContainer(
+                    this.moderatorVideoRef,
+                    moderator?.id,
+                    "주최자"
+                )}
 
-                {/* Domininat Speaker 1 WebCam */}
-                <div>
-                    <label
-                        style={{
-                            color: "black",
-                        }}
-                    >
-                        현재 발표자 1
-                    </label>
-                    <video
-                        id="domSpeaker1"
-                        ref={this.domininatSpeaker1VideoRef}
-                        style={{
-                            width: "100%",
-                            height: "auto",
-                        }}
-                    ></video>
-                </div>
+                {/* Local User Video - Only show if not already shown as moderator */}
+                {!isLocalModerator && this.renderVideoContainer(
+                    this.localVideoRef,
+                    this.props._localParticipant?.id,
+                    "당신",
+                    this.props._localVideoMuted
+                )}
 
-                {/* Domininat Speaker 2 WebCam */}
-                <div>
-                    <label
-                        style={{
-                            color: "black",
-                        }}
-                    >
-                        현재 발표자 2
-                    </label>
-                    <video
-                        id="domSpeaker2"
-                        ref={this.domininatSpeaker2VideoRef}
-                        style={{
-                            width: "100%",
-                            height: "auto",
-                        }}
-                    ></video>
-                </div>
+                {/* Dominant Speaker Video */}
+                {this.state.dominantSpeakerId && this.renderVideoContainer(
+                    this.dominantSpeakerVideoRef,
+                    this.state.dominantSpeakerId,
+                    `발표자: ${dominantSpeakerName}`
+                )}
+
+                {/* Random Speaker Video */}
+                {this.state.randomSpeakerId && participantCount >= 3 && this.renderVideoContainer(
+                    this.randomSpeakerVideoRef,
+                    this.state.randomSpeakerId,
+                    `참가자: ${randomSpeakerName}`
+                )}
             </div>
         );
-
-        const justLocal = (
-            <div>
-                {/* Moderator WebCam */}
-                <div>
-                    <label
-                        style={{
-                            color: "black",
-                        }}
-                    >
-                        주최자
-                    </label>
-                    <video
-                        ref={this.moderatorVideoRef}
-                        style={{
-                            width: "100%",
-                            height: "auto",
-                        }}
-                    ></video>
-                </div>
-
-                {/* Local WebCam */}
-                <div>
-                    <label
-                        style={{
-                            color: "black",
-                        }}
-                    >
-                        당신
-                    </label>
-                    {!this.props._localVideoMuted ? (
-                        <video
-                            ref={this.localVideoRef}
-                            style={{
-                                width: "100%",
-                                height: "auto",
-                            }}
-                        ></video>
-                    ) : (
-                        <img src="https://cdn-icons-png.flaticon.com/512/482/482432.png"
-                        style={{
-                            width: "100%",
-                            height: "auto",
-                        }}></img>
-                    )}
-                </div>
-
-                {/* Domininat Speaker 3 WebCam */}
-                <div>
-                    <label
-                        style={{
-                            color: "black",
-                        }}
-                    >
-                        현재 발표자 3
-                    </label>
-                    <video
-                        id="domSpeaker3"
-                        ref={this.domininatSpeaker3VideoRef}
-                        style={{
-                            width: "100%",
-                            height: "auto",
-                        }}
-                    ></video>
-                </div>
-            </div>
-        );
-
-        const display = this.props._localParticipant?.role === "moderator" ? modAndLocal : justLocal;
-
-        return display;
     }
 }
 
@@ -384,14 +408,16 @@ function _mapStateToProps(state: IReduxState, _ownProps: any) {
     const { remoteParticipants } = state["features/filmstrip"];
     const localParticipant = getParticipantByIdOrUndefined(state, undefined);
     const tracks = state["features/base/tracks"];
-
-    this.currentDominantSpeaker = localParticipant;
-
+    const { dominantSpeaker } = state['features/base/participants']
+    
     return {
         _remoteParticipants: remoteParticipants,
+        _remoteParticipantsLength: remoteParticipants.length,
         _state: state,
         _localParticipant: localParticipant,
         _localVideoMuted: isLocalTrackMuted(tracks, MEDIA_TYPE.VIDEO),
+        _dominantSpeaker: dominantSpeaker,
+        _tracks: tracks
     };
 }
 
