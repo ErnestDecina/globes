@@ -4,6 +4,7 @@ import { connect } from "react-redux";
 import {
     getActiveSpeakersToBeDisplayed,
     getDominantSpeakerParticipant,
+    getLocalParticipant,
     getParticipantByIdOrUndefined,
     hasRaisedHand
 } from "../../../../base/participants/functions";
@@ -11,7 +12,8 @@ import {
     getLocalVideoTrack,
     getTrackByMediaTypeAndParticipant,
     getVideoTrackByParticipant,
-    isLocalTrackMuted
+    isLocalTrackMuted,
+    isParticipantAudioMuted
 } from "../../../../base/tracks/functions.web";
 import { MEDIA_TYPE } from "../../../../base/media/constants";
 import { IParticipant } from "../../../../base/participants/types";
@@ -122,9 +124,24 @@ class KoreanWebCams extends Component<IProps, IState> {
 
     isParticipantSpeaking = (participantId: string | undefined): boolean => {
         if (!participantId) return false;
-        const speakers = getActiveSpeakersToBeDisplayed(this.props._state);
-        console.log(`Speaker ${participantId} ${speakers.has(participantId)}`);
-        return speakers.has(participantId);
+        const participant = getParticipantByIdOrUndefined(this.props._state, participantId);
+        const localParticipant = getLocalParticipant(this.props._state);
+
+        if(localParticipant?.id === participant?.id) {
+            if(localParticipant) {
+                return !isLocalTrackMuted(this.props._tracks, MEDIA_TYPE.AUDIO);
+            }
+        }
+
+        else {
+            if(participant) {
+                const speakers = getActiveSpeakersToBeDisplayed(this.props._state);
+                console.log(`Speaker ${participantId} ${speakers.has(participantId)}`);
+                return speakers.has(participantId) && !isParticipantAudioMuted(participant, this.props._state);
+            }
+        }
+        
+        return false
     };
 
     updateActiveSpeakers = () => {
