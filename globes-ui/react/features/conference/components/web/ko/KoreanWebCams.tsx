@@ -2,8 +2,10 @@ import React, { Component } from "react";
 import { IReduxState, IStore } from "../../../../app/types";
 import { connect } from "react-redux";
 import {
+    getActiveSpeakersToBeDisplayed,
     getDominantSpeakerParticipant,
-    getParticipantByIdOrUndefined
+    getParticipantByIdOrUndefined,
+    hasRaisedHand
 } from "../../../../base/participants/functions";
 import {
     getLocalVideoTrack,
@@ -35,9 +37,10 @@ export interface IState {
     popoverVisible: boolean;
     activeSpeakers: Set<string>;
     raisedHands: Set<string>;
-    dominantSpeakerId: string | undefined;
-    randomSpeakerId: string | undefined;
+    dominantSpeakerId: string | null;
+    randomSpeakerId: string | null;
     lastDominantSpeakerId: string | undefined;
+    lastRandomSpeakerId: string | null;
 }
 
 class KoreanWebCams extends Component<IProps, IState> {
@@ -45,6 +48,7 @@ class KoreanWebCams extends Component<IProps, IState> {
     public localVideoRef = React.createRef<HTMLVideoElement>();
     public dominantSpeakerVideoRef = React.createRef<HTMLVideoElement>();
     public randomSpeakerVideoRef = React.createRef<HTMLVideoElement>();
+    private hasUpdated = false;
 
     private speakerUpdateInterval: number | null = null;
     private participantUpdateInterval: number | null = null;
@@ -58,9 +62,10 @@ class KoreanWebCams extends Component<IProps, IState> {
             popoverVisible: false,
             activeSpeakers: new Set<string>(),
             raisedHands: new Set<string>(),
-            dominantSpeakerId: null,
-            randomSpeakerId: null,
-            lastDominantSpeakerId: null
+            dominantSpeakerId: 'aaaaaaaa',
+            randomSpeakerId: 'aaaaaaaaa',
+            lastDominantSpeakerId: undefined,
+            lastRandomSpeakerId: null
         };
     }
 
@@ -117,10 +122,9 @@ class KoreanWebCams extends Component<IProps, IState> {
 
     isParticipantSpeaking = (participantId: string | undefined): boolean => {
         if (!participantId) return false;
-        const tracks = this.props._state["features/base/tracks"];
-        const audioTrack = getTrackByMediaTypeAndParticipant(tracks, MEDIA_TYPE.AUDIO, participantId);
-        const audioLevel = audioTrack?.jitsiTrack?.getAudioLevel?.() || 0;
-        return audioLevel > 0.15;
+        const speakers = getActiveSpeakersToBeDisplayed(this.props._state);
+        console.log(`Speaker ${participantId} ${speakers.has(participantId)}`);
+        return speakers.has(participantId);
     };
 
     updateActiveSpeakers = () => {
@@ -141,7 +145,7 @@ class KoreanWebCams extends Component<IProps, IState> {
     updateRaisedHands = () => {
         const newRaisedHands = new Set<string>();
         const checkParticipant = (participant: IParticipant | undefined) => {
-            if (participant?.raisedHand) {
+            if (hasRaisedHand(participant)) {
                 newRaisedHands.add(participant.id);
             }
         };
@@ -165,7 +169,7 @@ class KoreanWebCams extends Component<IProps, IState> {
         let newRandomId: string | null = null;
 
         // Set dominant speaker ID (if there is one)
-        if (dominantSpeakerId && dominantSpeakerId !== moderatorId && dominantSpeakerId !== localId) {
+        if (dominantSpeakerId && dominantSpeakerId !== moderatorId && dominantSpeakerId !== localId && dominantSpeakerId !== this.state.lastDominantSpeakerId) {
             newDominantId = dominantSpeakerId;
         } else if (nonModeratorIds.length > 0) {
             // If no dominant speaker, use the first non-moderator
@@ -175,7 +179,7 @@ class KoreanWebCams extends Component<IProps, IState> {
         // Set random speaker to a different person than dominant speaker
         if (nonModeratorIds.length > 1) {
             const availableSpeakers = nonModeratorIds.filter(id => id !== newDominantId);
-            if (availableSpeakers.length > 0) {
+            if (availableSpeakers.length > 0 && newRandomId !== this.state.lastRandomSpeakerId) {
                 // Pick a random participant from available ones
                 const randomIndex = Math.floor(Math.random() * availableSpeakers.length);
                 newRandomId = availableSpeakers[randomIndex];
@@ -189,9 +193,10 @@ class KoreanWebCams extends Component<IProps, IState> {
         }
 
         this.setState({
+            lastRandomSpeakerId: this.state.randomSpeakerId,
+            lastDominantSpeakerId: dominantSpeakerId,
             dominantSpeakerId: newDominantId,
-            randomSpeakerId: newRandomId,
-            lastDominantSpeakerId: dominantSpeakerId
+            randomSpeakerId: newRandomId
         });
     };
 
@@ -206,13 +211,15 @@ class KoreanWebCams extends Component<IProps, IState> {
                 const localVideoTrack = getLocalVideoTrack(tracks);
                 const localJitsiTrack = localVideoTrack?.jitsiTrack;
 
-                if (this.moderatorVideoRef.current && localJitsiTrack) {
+                if (this.moderatorVideoRef.current && localJitsiTrack &&  !this.moderatorVideoRef.current.srcObject) {
                     localJitsiTrack.attach(this.moderatorVideoRef.current);
                     this.moderatorVideoRef.current.muted = true;
                     this.moderatorVideoRef.current.autoplay = true;
                 }
             } else {
-                this.attachTrackToVideoElement(moderator.id, this.moderatorVideoRef, "moderatorVideo");
+                if (this.moderatorVideoRef.current && !this.moderatorVideoRef.current.srcObject) {
+                    this.attachTrackToVideoElement(moderator.id, this.moderatorVideoRef, "moderatorVideo");
+                }
             }
         }
 
@@ -222,7 +229,7 @@ class KoreanWebCams extends Component<IProps, IState> {
             const localVideoTrack = getLocalVideoTrack(tracks);
             const localJitsiTrack = localVideoTrack?.jitsiTrack;
 
-            if (this.localVideoRef.current && localJitsiTrack) {
+            if (this.localVideoRef.current && localJitsiTrack && !this.localVideoRef.current.srcObject) {
                 localJitsiTrack.attach(this.localVideoRef.current);
                 this.localVideoRef.current.muted = true;
                 this.localVideoRef.current.autoplay = true;
@@ -230,6 +237,7 @@ class KoreanWebCams extends Component<IProps, IState> {
         }
 
         // Attach dominant speaker video
+        console.log(`${this.state.dominantSpeakerId}, ${this.state.lastDominantSpeakerId}`);
         if (this.state.dominantSpeakerId) {
             const success = this.attachTrackToVideoElement(
                 this.state.dominantSpeakerId, 
@@ -252,21 +260,20 @@ class KoreanWebCams extends Component<IProps, IState> {
                 console.log("Failed to attach random speaker video", this.state.randomSpeakerId);
             }
         }
+
+        this.hasUpdated = false;
     };
 
     attachTrackToVideoElement = (participantId: string | null | undefined, videoRef: React.RefObject<HTMLVideoElement>, elementId: string) => {
         if (!participantId || !videoRef.current) return false;
 
-        console.log(this.props._tracks);
 
         const participant = getParticipantByIdOrUndefined(this.props._state, participantId);
-        console.log(participant);
         if (!participant) return false;
 
         const videoTrack = getVideoTrackByParticipant(this.props._state, participant);
         const jitsiVideoTrack = videoTrack?.jitsiTrack;
-        console.log(videoTrack);
-  
+
         if (jitsiVideoTrack && videoRef.current) {
             try {
                 
@@ -287,11 +294,11 @@ class KoreanWebCams extends Component<IProps, IState> {
     getBorderStyle = (participantId: string | null | undefined) => {
         if (!participantId) return {};
         let style = { border: "none", boxShadow: "none" };
-        if (this.state.raisedHands.has(participantId)) {
-            style = { border: "4px solid yellow", boxShadow: "0 0 10px yellow" };
-        }
         if (this.state.activeSpeakers.has(participantId)) {
             style = { border: "4px solid green", boxShadow: "0 0 10px green" };
+        }
+        if (this.state.raisedHands.has(participantId)) {
+            style = { border: "4px solid yellow", boxShadow: "0 0 10px yellow" };
         }
         return style;
     };
@@ -312,7 +319,8 @@ class KoreanWebCams extends Component<IProps, IState> {
         
         console.log("Remote participants:", this.props._remoteParticipants);
         console.log("All tracks:", this.props._tracks);
-        
+        this.hasUpdated = true;
+
         if (JSON.stringify(prevProps._remoteParticipants) !== JSON.stringify(this.props._remoteParticipants)) {
             const { dispatch, _remoteParticipants } = this.props;
     
@@ -330,8 +338,8 @@ class KoreanWebCams extends Component<IProps, IState> {
 
     renderVideoContainer = (videoRef: React.RefObject<HTMLVideoElement>, participantId: string | null | undefined, label: string, isMuted: boolean = false) => {
         return (
-            <div style={{ position: 'relative', marginBottom: '10px' }} >
-                <label style={{ color: "black", marginBottom: '5px', display: 'block' }}>
+            <div style={{ position: 'relative', marginBottom: '10px', padding: '20px' }} >
+                <label style={{ color: "black", marginBottom: '5px', display: 'block', textAlign: 'center' }}>
                     {label} {participantId && this.state.activeSpeakers.has(participantId) ? "(말하는 중)" : ""}
                 </label>
                 <div style={{
@@ -357,11 +365,6 @@ class KoreanWebCams extends Component<IProps, IState> {
             </div>
         );
     };
-
-    _onRender() {
-        const { dispatch, _remoteParticipants } = this.props;
-        dispatch(setVisibleRemoteParticipants(0, _remoteParticipants.length));
-    }
 
     render() {
         const moderator = this.getModeratorParticipant();
@@ -394,7 +397,7 @@ class KoreanWebCams extends Component<IProps, IState> {
                 )}
 
                 {/* Random Speaker Video */}
-                {this.state.randomSpeakerId && participantCount >= 3 && this.renderVideoContainer(
+                {this.props._localParticipant?.role === "moderator" && this.state.randomSpeakerId && participantCount >= 3 && this.renderVideoContainer(
                     this.randomSpeakerVideoRef,
                     this.state.randomSpeakerId,
                     `참가자: ${randomSpeakerName}`
