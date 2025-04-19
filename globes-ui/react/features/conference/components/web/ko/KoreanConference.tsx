@@ -220,7 +220,7 @@ class KoreanConference extends AbstractConference<IProps, any> {
         this._handleFileSubmit = this._handleFileSubmit.bind(this);
         this._openAINotesWindow = this._openAINotesWindow.bind(this);
         this._handleAINotesWindowMessage = this._handleAINotesWindowMessage.bind(this);
-        this._onAINotesButtonClick = this._onAINotesButtonClick.bind(this); 
+        this._onAINotesButtonClick = this._onAINotesButtonClick.bind(this);
     }
 
     /**
@@ -244,8 +244,6 @@ class KoreanConference extends AbstractConference<IProps, any> {
 
     componentDidUpdate(prevProps: Readonly<IProps>, prevState: Readonly<any>, snapshot?: any): void {
         const { _localScreenShare, _isScreensharing } = this.props;
-
-
 
         if (_localScreenShare && _isScreensharing) {
             VideoLayout.updateLargeVideo(_localScreenShare?.id, true, true);
@@ -320,320 +318,249 @@ class KoreanConference extends AbstractConference<IProps, any> {
                         </div>
 
                         {/* Navbar - FIXED */}
-                        <div
-                            style={{
-                                position: "absolute",
-                                width: "100%",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                flexDirection: "row",
-                            }}
-                        >
-                            <div
-                                style={{
-                                    width: "100%",
-                                    display: "flex",
-                                    flexDirection: "row",
-                                    alignItems: "center",
-                                    padding: "8px",
-                                    backgroundColor: "#f3f4f6",
-                                }}
-                            >
-                                {/* 3-dot menu on the left */}
-                                <div
-                                    style={{
-                                        flexShrink: 0,
-                                    }}
-                                >
-                                    <button
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            width: "40px",
-                                            height: "40px",
-                                            borderRadius: "50%",
-                                            backgroundColor: "#d1d5db",
-                                            color: "#374151",
-                                            border: "none",
-                                            cursor: "pointer",
-                                        }}
-                                        onClick={this._onSettingsButtonClick}
-                                    >
-                                        <MoreVertical size={20} />
-                                    </button>
-                                </div>
+<div
+    style={{
+        position: "absolute",
+        bottom: 0,
+        width: "100%",
+        height: "10%", // Keep the navbar height at 10%
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "row",
+    }}
+>
+    <div
+        style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            padding: "8px",
+            backgroundColor: "white",
+        }}
+    >
+        {/* 3-dot menu on the left */}
+        <div
+            style={{
+                flexShrink: 0,
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                marginRight: "8px",
+            }}
+        >
+            <button
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "60px", // Make button width 80% of container height for a circle
+                    height: "60px", // Make button height 80% of container height
+                    borderRadius: "50%",
+                    backgroundColor: "#d1d5db",
+                    color: "#374151",
+                    border: "none",
+                    cursor: "pointer",
+                }}
+                onClick={this._onSettingsButtonClick}
+            >
+                <MoreVertical size="60%" /> {/* Scale icon to 60% of button size */}
+            </button>
+        </div>
 
-                                {/* Centered action buttons */}
-                                <div
-                                    style={{
-                                        flexGrow: 1,
-                                        display: "flex",
-                                        flexDirection: "row",
-                                        justifyContent: "center",
-                                        gap: "8px",
-                                    }}
-                                >
-                                    <button
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            width: "40px",
-                                            height: "40px",
-                                            borderRadius: "50%",
-                                            backgroundColor: "#ef4444",
-                                            color: "white",
-                                            border: "none",
-                                            cursor: "pointer",
-                                        }}
-                                        onClick={this._onLeaveButtonClick}
-                                    >
-                                        <X size={20} />
-                                    </button>
+        {/* Centered action buttons */}
+        <div
+            style={{
+                flexGrow: 1,
+                height: "100%",
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: "1%", // Use percentage for gap to be proportional
+            }}
+        >
+            {/* Leave button */}
+            <button
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "60px", // Make button width 80% of container height for a circle
+                    height: "60px", // Make button height 80% of container height
+                    borderRadius: "50%",
+                    backgroundColor: "#ef4444",
+                    color: "white",
+                    border: "none",
+                    cursor: "pointer",
+                }}
+                onClick={this._onLeaveButtonClick}
+            >
+                <X size="60%" /> {/* Scale icon relative to button size */}
+            </button>
 
-                                    {!this.props._audioMuted ? (
-                                        <button
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                width: "40px",
-                                                height: "40px",
-                                                borderRadius: "50%",
-                                                backgroundColor: "#2cfc03",
-                                                color: "white",
-                                                border: "none",
-                                                cursor: "pointer",
-                                            }}
-                                            onClick={this._onMuteAudioButtonClick}
-                                        >
-                                            <Mic size={20} />
-                                        </button>
-                                    ) : (
-                                        <button
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                width: "40px",
-                                                height: "40px",
-                                                borderRadius: "50%",
-                                                backgroundColor: "#ff0000",
-                                                color: "white",
-                                                border: "none",
-                                                cursor: "pointer",
-                                            }}
-                                            onClick={this._onMuteAudioButtonClick}
-                                        >
-                                            <MicOff size={20} />
-                                        </button>
-                                    )}
+            {/* Mic button */}
+            <button
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "60px", // Make button width 80% of container height for a circle
+                    height: "60px", // Make button height 80% of container height
+                    borderRadius: "50%",
+                    backgroundColor: !this.props._audioMuted ? "#2cfc03" : "#ff0000",
+                    color: "white",
+                    border: "none",
+                    cursor: "pointer",
+                }}
+                onClick={this._onMuteAudioButtonClick}
+            >
+                {!this.props._audioMuted ? (
+                    <Mic size="60%" />
+                ) : (
+                    <MicOff size="60%" />
+                )}
+            </button>
 
-                                    {/* Video Camera */}
-                                    {!this.props._videoMuted ? (
-                                        <button
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                width: "40px",
-                                                height: "40px",
-                                                borderRadius: "50%",
-                                                backgroundColor: "#2cfc03",
-                                                color: "white",
-                                                border: "none",
-                                                cursor: "pointer",
-                                            }}
-                                            onClick={this._onWebcamButtonClick}
-                                        >
-                                            <Video size={20} />
-                                        </button>
-                                    ) : (
-                                        <button
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                width: "40px",
-                                                height: "40px",
-                                                borderRadius: "50%",
-                                                backgroundColor: "#ff0000",
-                                                color: "white",
-                                                border: "none",
-                                                cursor: "pointer",
-                                            }}
-                                            onClick={this._onWebcamButtonClick}
-                                        >
-                                            <VideoOff size={20} />
-                                        </button>
-                                    )}
+            {/* Video Camera button */}
+            <button
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "60px", // Make button width 80% of container height for a circle
+                    height: "60px", // Make button height 80% of container height
+                    borderRadius: "50%",
+                    backgroundColor: !this.props._videoMuted ? "#2cfc03" : "#ff0000",
+                    color: "white",
+                    border: "none",
+                    cursor: "pointer",
+                }}
+                onClick={this._onWebcamButtonClick}
+            >
+                {!this.props._videoMuted ? (
+                    <Video size="60%" />
+                ) : (
+                    <VideoOff size="60%" />
+                )}
+            </button>
 
-                                    {/* ScreenShare */}
+            {/* ScreenShare button */}
+            <button
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "60px", // Make button width 80% of container height for a circle
+                    height: "60px", // Make button height 80% of container height
+                    borderRadius: "50%",
+                    backgroundColor: this.props._isScreensharing || this.props._isPDFScreenShare ? "#ff0000" : "#0394fc",
+                    color: "white",
+                    border: "none",
+                    cursor: "pointer",
+                }}
+                onClick={this._onScreenShareButtonClick}
+            >
+                {this.props._isScreensharing || this.props._isPDFScreenShare ? (
+                    <MonitorX size="60%" />
+                ) : (
+                    <Cast size="60%" />
+                )}
+            </button>
 
-                                    {this.props._isScreensharing || this.props._isPDFScreenShare ? (
-                                        <button
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                width: "40px",
-                                                height: "40px",
-                                                borderRadius: "50%",
-                                                backgroundColor: "#ff0000",
-                                                color: "white",
-                                                border: "none",
-                                                cursor: "pointer",
-                                            }}
-                                            onClick={this._onScreenShareButtonClick}
-                                        >
-                                            <MonitorX size={20} />
-                                        </button>
-                                    ) : (
-                                        <button
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                width: "40px",
-                                                height: "40px",
-                                                borderRadius: "50%",
-                                                backgroundColor: "#0394fc",
-                                                color: "white",
-                                                border: "none",
-                                                cursor: "pointer",
-                                            }}
-                                            onClick={this._onScreenShareButtonClick}
-                                        >
-                                            <Cast size={20} />
-                                        </button>
-                                    )}
+            {/* Handup button */}
+            <button
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "60px", // Make button width 80% of container height for a circle
+                    height: "60px", // Make button height 80% of container height
+                    borderRadius: "50%",
+                    backgroundColor: !this.props._raiseHand ? "#0394fc" : "#ff0000",
+                    color: "white",
+                    border: "none",
+                    cursor: "pointer",
+                }}
+                onClick={this._onRaiseHandButtonClick}
+            >
+                <Hand size="60%" />
+            </button>
 
-                                    {/* Handup */}
-                                    {!this.props._raiseHand ? (
-                                        <button
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                width: "40px",
-                                                height: "40px",
-                                                borderRadius: "50%",
-                                                backgroundColor: "#0394fc",
-                                                color: "white",
-                                                border: "none",
-                                                cursor: "pointer",
-                                            }}
-                                            onClick={this._onRaiseHandButtonClick}
-                                        >
-                                            <Hand size={20} />
-                                        </button>
-                                    ) : (
-                                        <button
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                width: "40px",
-                                                height: "40px",
-                                                borderRadius: "50%",
-                                                backgroundColor: "#ff0000",
-                                                color: "white",
-                                                border: "none",
-                                                cursor: "pointer",
-                                            }}
-                                            onClick={this._onRaiseHandButtonClick}
-                                        >
-                                            <Hand size={20} />
-                                        </button>
-                                    )}
+            {/* AI Notes button */}
+            <button
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "60px", // Make button width 80% of container height for a circle
+                    height: "60px", // Make button height 80% of container height
+                    borderRadius: "50%",
+                    backgroundColor: "#0394fc",
+                    color: "white",
+                    border: "none",
+                    cursor: "pointer",
+                }}
+                onClick={this._onAINotesButtonClick}
+            >
+                <NotebookPen size="60%" />
+            </button>
 
-                                    {/* AI Notes */}
-                                    <button
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            width: "40px",
-                                            height: "40px",
-                                            borderRadius: "50%",
-                                            backgroundColor: "#0394fc",
-                                            color: "white",
-                                            border: "none",
-                                            cursor: "pointer",
-                                        }}
-                                        onClick={this._onAINotesButtonClick}
-                                    >
-                                        <NotebookPen size={20} />
-                                    </button>
+            {/* SubTitles button */}
+            <button
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "60px", // Make button width 80% of container height for a circle
+                    height: "60px", // Make button height 80% of container height
+                    borderRadius: "50%",
+                    backgroundColor: "#0394fc",
+                    color: "white",
+                    border: "none",
+                    cursor: "pointer",
+                }}
+            >
+                <Captions size="60%" />
+            </button>
+        </div>
 
-                                    {/* SubTitles */}
-                                    <button
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            width: "40px",
-                                            height: "40px",
-                                            borderRadius: "50%",
-                                            backgroundColor: "#0394fc",
-                                            color: "white",
-                                            border: "none",
-                                            cursor: "pointer",
-                                        }}
-                                    >
-                                        <Captions size={20} />
-                                    </button>
-                                </div>
-
-                                {/* Help button on the right */}
-                                <div
-                                    style={{
-                                        flexShrink: 0,
-                                    }}
-                                >
-                                    {/* Chat button */}
-                                    {this.props._isChatOpen ? (
-                                        <button
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                width: "40px",
-                                                height: "40px",
-                                                borderRadius: "50%",
-                                                backgroundColor: "#d1d5db",
-                                                color: "#374151",
-                                                border: "none",
-                                                cursor: "pointer",
-                                            }}
-                                            onClick={this._onChatButtonClick}
-                                        >
-                                            <MessageSquareOff size={20} />
-                                        </button>
-                                    ) : (
-                                        <button
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                width: "40px",
-                                                height: "40px",
-                                                borderRadius: "50%",
-                                                backgroundColor: "#d1d5db",
-                                                color: "#374151",
-                                                border: "none",
-                                                cursor: "pointer",
-                                            }}
-                                            onClick={this._onChatButtonClick}
-                                        >
-                                            <MessageSquare size={20}></MessageSquare>
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+        {/* Chat button on the right */}
+        <div
+            style={{
+                flexShrink: 0,
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                marginLeft: "8px",
+            }}
+        >
+            <button
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "60px", // Make button width 80% of container height for a circle
+                    height: "60px", // Make button height 80% of container height
+                    borderRadius: "50%",
+                    backgroundColor: "#d1d5db",
+                    color: "#374151",
+                    border: "none",
+                    cursor: "pointer",
+                }}
+                onClick={this._onChatButtonClick}
+            >
+                {this.props._isChatOpen ? (
+                    <MessageSquareOff size="60%" />
+                ) : (
+                    <MessageSquare size="60%" />
+                )}
+            </button>
+        </div>
+    </div>
+</div>
                     </div>
 
                     {/* Right Webcam or Chat */}
@@ -845,7 +772,6 @@ class KoreanConference extends AbstractConference<IProps, any> {
         dispatch(raiseHand(!_raiseHand));
     }
 
-
     _openAINotesWindow() {
         const { dispatch, _aiNotesContent, _aiNotesWindowRef, _meetingRealName, _locationURL } = this.props;
         const url = _locationURL.pathname.slice(1);
@@ -854,43 +780,52 @@ class KoreanConference extends AbstractConference<IProps, any> {
             _aiNotesWindowRef.focus();
             return;
         }
-        
+
         // Open new window
-        const aiNotesWindow = window.open( 
-            'http://localhost:3000/static/ai-notes-window.html', // Path to your HTML file
-            'AINotesWindow',
-            'width=800,height=600,resizable=yes,scrollbars=yes'
+        const aiNotesWindow = window.open(
+            "http://localhost:3000/static/ai-notes-window.html", // Path to your HTML file
+            "AINotesWindow",
+            "width=800,height=600,resizable=yes,scrollbars=yes"
         );
-        
+
         if (aiNotesWindow) {
             // Save reference to the window
             dispatch({
                 type: UPDATE_AI_NOTES_WINDOW_REF,
-                windowRef: aiNotesWindow
+                windowRef: aiNotesWindow,
             });
-            
-            // Setup message listener for communication with the new window
-            window.addEventListener('message', this._handleAINotesWindowMessage);
-            
-            // Wait for window to load before sending data
-            window.addEventListener('message', (event) => {
-                if (event.data?.type === 'aiNotesWindowReady') {
-                    aiNotesWindow.postMessage({
-                        type: 'notesContent',
-                        content: _aiNotesContent || ''
-                    }, '*');
-            
-                    aiNotesWindow.postMessage({
-                        type: 'roomName',
-                        roomName: _meetingRealName || 'Unknown'
-                    }, '*');
 
-                    aiNotesWindow.postMessage({
-                        type: 'uuid',
-                        uuid: url
-                    }, '*');
+            // Setup message listener for communication with the new window
+            window.addEventListener("message", this._handleAINotesWindowMessage);
+
+            // Wait for window to load before sending data
+            window.addEventListener("message", (event) => {
+                if (event.data?.type === "aiNotesWindowReady") {
+                    aiNotesWindow.postMessage(
+                        {
+                            type: "notesContent",
+                            content: _aiNotesContent || "",
+                        },
+                        "*"
+                    );
+
+                    aiNotesWindow.postMessage(
+                        {
+                            type: "roomName",
+                            roomName: _meetingRealName || "Unknown",
+                        },
+                        "*"
+                    );
+
+                    aiNotesWindow.postMessage(
+                        {
+                            type: "uuid",
+                            uuid: url,
+                        },
+                        "*"
+                    );
                 }
-            
+
                 // optionally handle other messages
             });
         }
@@ -898,37 +833,37 @@ class KoreanConference extends AbstractConference<IProps, any> {
 
     _handleAINotesWindowMessage(event) {
         const { dispatch } = this.props;
-        
+
         // Handle messages from the AI Notes window
         if (event.data && event.data.type) {
             switch (event.data.type) {
-                case 'notesUpdated':
-                case 'notesSaved':
+                case "notesUpdated":
+                case "notesSaved":
                     // Update Redux with the notes content
                     dispatch({
                         type: UPDATE_AI_NOTES_CONTENT,
-                        aiNotesContent: event.data.content
+                        aiNotesContent: event.data.content,
                     });
                     break;
-                    
-                case 'aiNotesWindowClosed':
+
+                case "aiNotesWindowClosed":
                     // Update Redux with the final notes before window closed
                     dispatch({
                         type: UPDATE_AI_NOTES_CONTENT,
-                        aiNotesContent: event.data.content
+                        aiNotesContent: event.data.content,
                     });
-                    
+
                     // Clean up window reference
                     dispatch({
                         type: UPDATE_AI_NOTES_WINDOW_REF,
-                        windowRef: null
+                        windowRef: null,
                     });
-                    
+
                     // Remove the message listener
-                    window.removeEventListener('message', this._handleAINotesWindowMessage);
+                    window.removeEventListener("message", this._handleAINotesWindowMessage);
                     break;
-                    
-                case 'aiNotesWindowReady':
+
+                case "aiNotesWindowReady":
                     // Window is ready, we could trigger a notes generation if needed
                     break;
             }
@@ -939,7 +874,7 @@ class KoreanConference extends AbstractConference<IProps, any> {
         if (!event) {
             return;
         }
-        
+
         this._openAINotesWindow();
     }
 
@@ -1104,7 +1039,7 @@ function _mapStateToProps(state: IReduxState) {
         _isScreenSharePopupOpen: isScreenSharePopupOpen,
         _locationURL: locationURL,
         _isPDFScreenShare: isPDFScreenShare,
-        _meetingRealName: meetingRealName
+        _meetingRealName: meetingRealName,
     };
 }
 

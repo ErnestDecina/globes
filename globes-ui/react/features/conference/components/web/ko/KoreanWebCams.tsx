@@ -66,9 +66,9 @@ class KoreanWebCams extends Component<IProps, IState> {
             popoverVisible: false,
             activeSpeakers: new Set<string>(),
             raisedHands: new Set<string>(),
-            dominantSpeakerId: 'aaaaaaaa',
-            randomSpeakerId: 'aaaaaaaaa',
-            lastDominantSpeakerId: undefined,
+            dominantSpeakerId: null,
+            randomSpeakerId: null,
+            lastDominantSpeakerId: null,
             lastRandomSpeakerId: null
         };
     }
