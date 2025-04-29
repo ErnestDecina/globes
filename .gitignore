@@ -123,5 +123,5 @@ test-results
 globes-api/.env
 
 
-globes-api/uploads
+globes-api/uploads/meetings
 .temp
